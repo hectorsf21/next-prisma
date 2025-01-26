@@ -103,8 +103,15 @@ export async function PUT(req: Request) {
       );
     }
 
-    // Actualizar el historial de estados
-    const historialActual = JSON.parse(tramite.statusHistory || "[]");
+    // Verificar y parsear el historial de estados
+    const historialActual =
+      typeof tramite.statusHistory === "string"
+        ? JSON.parse(tramite.statusHistory)
+        : Array.isArray(tramite.statusHistory)
+        ? tramite.statusHistory
+        : []; // Valor predeterminado en caso de error
+
+    // Agregar el nuevo estado al historial
     historialActual.push({
       status: nuevoStatus,
       fecha: new Date().toISOString(),
