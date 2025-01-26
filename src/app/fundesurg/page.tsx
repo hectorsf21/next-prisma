@@ -38,8 +38,10 @@ export default function Fundesurg() {
             ? JSON.parse(tramite.statusHistory)
             : tramite.statusHistory,
       }));
-      setTramitesRevision(parsedTramites.filter((t) => t.status === "EN_REVISION"));
-      setTramitesOtros(parsedTramites.filter((t) => t.status !== "EN_REVISION"));
+      
+      // Filtrar trámites por estado con tipo explícito
+      setTramitesRevision(parsedTramites.filter((t: Tramite) => t.status === "EN_REVISION"));
+      setTramitesOtros(parsedTramites.filter((t: Tramite) => t.status !== "EN_REVISION"));
     } catch (error) {
       console.error("Error al obtener trámites:", error);
     }
