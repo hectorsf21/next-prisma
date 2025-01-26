@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       carrera,
       cantidad,
       numeroTransferencia,
-      monto, // Nuevo campo para monto
+      monto, // Asegúrate de que este campo está incluido en el cuerpo
     } = body;
 
     if (
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     // Generar un código único (5 dígitos)
     const codigoUnico = Math.floor(10000 + Math.random() * 90000).toString();
 
-    // Crear el trámite con el estado inicial y el historial
+    // Crear el trámite con estado inicial y su historial
     const tramite = await prisma.tramite.create({
       data: {
         codigo: codigoUnico,
@@ -46,14 +46,14 @@ export async function POST(req: NextRequest) {
         carrera,
         cantidad,
         numeroTransferencia,
-        monto, // Campo nuevo
+        monto, // Almacena el monto proporcionado
         status: "EN_REVISION",
         statusHistory: [
           {
             status: "EN_REVISION",
             fecha: new Date().toISOString(),
           },
-        ], // Guardar como JSON
+        ],
       },
     });
 
@@ -106,14 +106,23 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Manejar statusHistory
+    // Manejar statusHistory con validación
     let historialActual: { status: string; fecha: string }[] = [];
 
     if (Array.isArray(tramite.statusHistory)) {
-      historialActual = tramite.statusHistory;
+      historialActual = tramite.statusHistory.filter(
+        (item): item is { status: string; fecha: string } =>
+          item && typeof item.status === "string" && typeof item.fecha === "string"
+      );
     } else if (typeof tramite.statusHistory === "string") {
       try {
-        historialActual = JSON.parse(tramite.statusHistory);
+        const parsedHistory = JSON.parse(tramite.statusHistory);
+        if (Array.isArray(parsedHistory)) {
+          historialActual = parsedHistory.filter(
+            (item): item is { status: string; fecha: string } =>
+              item && typeof item.status === "string" && typeof item.fecha === "string"
+          );
+        }
       } catch (e) {
         console.error("Error al parsear statusHistory:", e);
         historialActual = [];
@@ -131,7 +140,7 @@ export async function PUT(req: NextRequest) {
       where: { id },
       data: {
         status: nuevoStatus,
-        statusHistory: historialActual, // Guardar como JSON
+        statusHistory: historialActual,
       },
     });
 
