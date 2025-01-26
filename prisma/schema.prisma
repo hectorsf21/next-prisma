@@ -7,21 +7,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  SUPERUSUARIO
-  COORDINACION
-  FUNDEURG
-  SOLICITANTE
-}
-
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(100)
-  email     String   @unique @db.VarChar(255)
-  password  String   @db.VarChar(255)
-  role      Role     @default(SOLICITANTE) // Rol del usuario
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  Int      @id @default(autoincrement())
+  name                String   @db.VarChar(100)
+  email               String   @unique @db.VarChar(255)
+  password            String   @db.VarChar(255)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  role                String   @db.VarChar(100)
+  permisosReportes    Json     @default("{}")
+  permisosSolicitudes Json     @default("{}")
 }
 
 model Documento {
@@ -31,4 +26,21 @@ model Documento {
   tipoPapel     String
   precio        Float
   creadoEn      DateTime @default(now())
+}
+
+model Tramite {
+  id                  Int      @id @default(autoincrement())
+  codigo              String   @unique @db.VarChar(5)
+  status              String   @default("EN_REVISION")
+  nombreSolicitante   String   @db.VarChar(255)
+  nombreDocumento     String   @db.VarChar(255)
+  tipoDocumento       String   @db.VarChar(100)
+  tipoPapel           String   @db.VarChar(100)
+  carrera             String   @db.VarChar(100)
+  cantidad            Int
+  numeroTransferencia String   @db.VarChar(255)
+  statusHistory       Json     @default("[]")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  monto               Float    @default(0.0)
 }

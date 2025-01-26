@@ -8,7 +8,16 @@ interface User {
   id: number;
   name: string;
   email: string;
-  role: string; // Nuevo campo para roles
+  role: string | object; // Role puede ser string o JSON
+  permisosSolicitudes?: {
+    verNoValidas: boolean;
+    verValidarEntrega: boolean;
+    verEntregadas: boolean;
+  };
+  permisosReportes?: {
+    reportesFinancieros: boolean;
+    reportesSolicitudes: boolean;
+  };
 }
 
 interface FormData {
@@ -16,10 +25,19 @@ interface FormData {
   name: string;
   email: string;
   password: string;
-  role: string; // Campo para rol
+  role: string | object; // Campo para rol
+  permisosSolicitudes?: {
+    verNoValidas: boolean;
+    verValidarEntrega: boolean;
+    verEntregadas: boolean;
+  };
+  permisosReportes?: {
+    reportesFinancieros: boolean;
+    reportesSolicitudes: boolean;
+  };
 }
 
-// Lista de roles disponibles (valores EXACTOS del enum Role en schema.prisma)
+// Lista de roles disponibles
 const roles = ["SUPERUSUARIO", "COORDINACION", "FUNDEURG", "SOLICITANTE"];
 
 // Componente principal del CRUD
@@ -30,6 +48,15 @@ export default function SuperUsuario() {
     email: "",
     password: "",
     role: roles[3], // Rol predeterminado: "SOLICITANTE"
+    permisosSolicitudes: {
+      verNoValidas: false,
+      verValidarEntrega: false,
+      verEntregadas: false,
+    },
+    permisosReportes: {
+      reportesFinancieros: false,
+      reportesSolicitudes: false,
+    },
   });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -44,21 +71,39 @@ export default function SuperUsuario() {
     try {
       const res = await axios.get("/api/users");
       setUsers(res.data);
+      console.log('fetch es:', res.data)
     } catch (error) {
       console.error("Error al obtener los usuarios:", error);
     }
   };
 
   // Manejar los cambios del formulario
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
+    const target = e.target as HTMLInputElement | HTMLSelectElement;
+    const { name, value, type } = target;
+
+    if (type === "checkbox") {
+      const { checked } = target as HTMLInputElement;
+      const [category, field] = name.split(".");
+      setFormData((prev) => ({
+        ...prev,
+        [category]: {
+          ...(prev[category as keyof FormData] as Record<string, boolean>),
+          [field]: checked,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   // Manejar la creación o actualización del usuario
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log('formData es:',formData)
     try {
       if (isEditing && formData.id) {
         await axios.put(`/api/users?id=${formData.id}`, formData);
@@ -67,14 +112,28 @@ export default function SuperUsuario() {
         await axios.post("/api/users", formData);
       }
       fetchUsers();
-      setFormData({ name: "", email: "", password: "", role: roles[3] }); // Restablece el formulario
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        role: roles[3],
+        permisosSolicitudes: {
+          verNoValidas: false,
+          verValidarEntrega: false,
+          verEntregadas: false,
+        },
+        permisosReportes: {
+          reportesFinancieros: false,
+          reportesSolicitudes: false,
+        },
+      });
       setIsEditing(false);
     } catch (error) {
       console.error("Error al guardar el usuario:", error);
     } finally {
       setLoading(false);
     }
-    };
+  };
 
   // Manejar la edición de un usuario
   const handleEdit = (user: User) => {
@@ -82,8 +141,17 @@ export default function SuperUsuario() {
       id: user.id,
       name: user.name,
       email: user.email,
-      password: "", // Deja vacío el campo de contraseña
-      role: user.role, // Cargar el rol del usuario
+      password: "",
+      role: user.role,
+      permisosSolicitudes: user.permisosSolicitudes || {
+        verNoValidas: false,
+        verValidarEntrega: false,
+        verEntregadas: false,
+      },
+      permisosReportes: user.permisosReportes || {
+        reportesFinancieros: false,
+        reportesSolicitudes: false,
+      },
     });
     setIsEditing(true);
   };
@@ -130,10 +198,9 @@ export default function SuperUsuario() {
           onChange={handleChange}
           className="w-full p-2 border rounded"
         />
-        {/* Selector de roles */}
         <select
           name="role"
-          value={formData.role}
+          value={formData.role as string}
           onChange={handleChange}
           className="w-full p-2 border rounded"
         >
@@ -143,6 +210,67 @@ export default function SuperUsuario() {
             </option>
           ))}
         </select>
+
+        {/* Permisos de solicitudes */}
+        {(formData.role === "COORDINACION" || formData.role === "FUNDEURG") && (
+  <>
+    {/* Permisos de Solicitudes */}
+    <div className="border p-4 rounded">
+      <h3 className="text-lg font-medium">Permisos de Solicitudes</h3>
+      <label className="block">
+        <input
+          type="checkbox"
+          name="permisosSolicitudes.verNoValidas"
+          checked={formData.permisosSolicitudes?.verNoValidas || false}
+          onChange={handleChange}
+        />
+        Ver no válidas
+      </label>
+      <label className="block">
+        <input
+          type="checkbox"
+          name="permisosSolicitudes.verValidarEntrega"
+          checked={formData.permisosSolicitudes?.verValidarEntrega || false}
+          onChange={handleChange}
+        />
+        Ver y validar en proceso
+      </label>
+      <label className="block">
+        <input
+          type="checkbox"
+          name="permisosSolicitudes.verEntregadas"
+          checked={formData.permisosSolicitudes?.verEntregadas || false}
+          onChange={handleChange}
+        />
+        Ver entregadas
+      </label>
+    </div>
+
+    {/* Permisos de Reportes */}
+    <div className="border p-4 rounded mt-4">
+      <h3 className="text-lg font-medium">Permisos de Reportes</h3>
+      <label className="block">
+        <input
+          type="checkbox"
+          name="permisosReportes.reportesFinancieros"
+          checked={formData.permisosReportes?.reportesFinancieros || false}
+          onChange={handleChange}
+        />
+        Reportes financieros
+      </label>
+      <label className="block">
+        <input
+          type="checkbox"
+          name="permisosReportes.reportesSolicitudes"
+          checked={formData.permisosReportes?.reportesSolicitudes || false}
+          onChange={handleChange}
+        />
+        Reportes de solicitudes
+      </label>
+      </div>
+       </>
+        )}
+
         <button
           type="submit"
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
@@ -173,7 +301,11 @@ export default function SuperUsuario() {
               <td className="border border-gray-300 px-4 py-2">{user.id}</td>
               <td className="border border-gray-300 px-4 py-2">{user.name}</td>
               <td className="border border-gray-300 px-4 py-2">{user.email}</td>
-              <td className="border border-gray-300 px-4 py-2">{user.role}</td>
+              <td className="border border-gray-300 px-4 py-2">
+                {typeof user.role === "string"
+                  ? user.role
+                  : JSON.stringify(user.role)}
+              </td>
               <td className="border border-gray-300 px-4 py-2 space-x-2">
                 <button
                   onClick={() => handleEdit(user)}

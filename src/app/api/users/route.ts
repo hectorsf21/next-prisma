@@ -11,20 +11,11 @@ export async function GET() {
 // POST: Crear un nuevo usuario
 export async function POST(req: Request) {
   const body = await req.json(); // Parseamos el cuerpo de la solicitud
-  const { name, email, password, role } = body; // Incluye el rol en los datos recibidos
+  const { name, email, password, role, permisosSolicitudes, permisosReportes } = body;
 
   // Valida que todos los campos necesarios estén presentes
   if (!name || !email || !password || !role) {
     return new Response(JSON.stringify({ error: "Faltan campos obligatorios" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Valida que el rol sea válido
-  const validRoles = ["SUPERUSUARIO", "COORDINACION", "FUNDEURG", "SOLICITANTE"];
-  if (!validRoles.includes(role)) {
-    return new Response(JSON.stringify({ error: "Rol inválido" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
@@ -35,8 +26,10 @@ export async function POST(req: Request) {
     data: {
       name,
       email,
-      password, // NOTA: Hashea esta contraseña antes de almacenarla en producción
-      role, // Incluye el rol en la creación del usuario
+      password, // Asegúrate de hashear esta contraseña antes de almacenarla en producción
+      role, // Almacena el rol como string
+      permisosSolicitudes: permisosSolicitudes || {}, // Almacena permisos de solicitudes como JSON
+      permisosReportes: permisosReportes || {}, // Almacena permisos de reportes como JSON
     },
   });
 
@@ -68,20 +61,10 @@ export async function DELETE(req: Request) {
 export async function PUT(req: Request) {
   const url = new URL(req.url);
   const id = Number(url.searchParams.get("id")); // Obtén el ID desde los parámetros de la URL
-  const body = await req.json();
-  const { name, email, password, role } = body; // Incluye el rol en los datos recibidos
+  const { name, email, password, role, permisosSolicitudes, permisosReportes } = await req.json();
 
   if (!id || !name || !email || !role) {
     return new Response(JSON.stringify({ error: "Faltan campos obligatorios" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  // Valida que el rol sea válido
-  const validRoles = ["SUPERUSUARIO", "COORDINACION", "FUNDEURG", "SOLICITANTE"];
-  if (!validRoles.includes(role)) {
-    return new Response(JSON.stringify({ error: "Rol inválido" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
@@ -92,8 +75,10 @@ export async function PUT(req: Request) {
     data: {
       name,
       email,
-      password, // NOTA: Hashea la contraseña si es necesario
-      role, // Incluye el rol en la actualización del usuario
+      password, // Asegúrate de hashear esta contraseña si es necesario
+      role, // Almacena el rol como string
+      permisosSolicitudes: permisosSolicitudes || {}, // Actualiza permisos de solicitudes
+      permisosReportes: permisosReportes || {}, // Actualiza permisos de reportes
     },
   });
 
