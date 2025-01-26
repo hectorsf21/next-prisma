@@ -1,4 +1,5 @@
-import prisma from '@/lib/prisma'; // Importa el cliente de Prisma
+import prisma from '../../../lib/prisma';
+; // Importa el cliente de Prisma
 
 // GET: Obtener todos los usuarios
 export async function GET() {
