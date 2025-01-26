@@ -17,7 +17,7 @@ model User {
 }
 
 model Documento {
-  id            Int     @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   nombre        String
   tipoDocumento String
   tipoPapel     String
