@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 
 // Crear un trámite (POST)
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const {
@@ -13,6 +13,7 @@ export async function POST(req: Request) {
       carrera,
       cantidad,
       numeroTransferencia,
+      monto, // Nuevo campo para monto
     } = body;
 
     if (
@@ -22,10 +23,11 @@ export async function POST(req: Request) {
       !tipoPapel ||
       !carrera ||
       !cantidad ||
-      !numeroTransferencia
+      !numeroTransferencia ||
+      monto === undefined
     ) {
-      return NextResponse.json(
-        { error: "Todos los campos son obligatorios" },
+      return new Response(
+        JSON.stringify({ error: "Todos los campos son obligatorios" }),
         { status: 400 }
       );
     }
@@ -33,7 +35,7 @@ export async function POST(req: Request) {
     // Generar un código único (5 dígitos)
     const codigoUnico = Math.floor(10000 + Math.random() * 90000).toString();
 
-    // Crear el trámite con el estado inicial y el historial en formato JSON
+    // Crear el trámite con el estado inicial y el historial
     const tramite = await prisma.tramite.create({
       data: {
         codigo: codigoUnico,
@@ -44,21 +46,22 @@ export async function POST(req: Request) {
         carrera,
         cantidad,
         numeroTransferencia,
+        monto, // Campo nuevo
         status: "EN_REVISION",
-        statusHistory: JSON.stringify([
+        statusHistory: [
           {
             status: "EN_REVISION",
             fecha: new Date().toISOString(),
           },
-        ]),
+        ], // Guardar como JSON
       },
     });
 
-    return NextResponse.json(tramite, { status: 201 });
+    return new Response(JSON.stringify(tramite), { status: 201 });
   } catch (error) {
     console.error("Error al crear trámite:", error);
-    return NextResponse.json(
-      { error: "Error interno del servidor" },
+    return new Response(
+      JSON.stringify({ error: "Error interno del servidor" }),
       { status: 500 }
     );
   }
@@ -68,25 +71,25 @@ export async function POST(req: Request) {
 export async function GET() {
   try {
     const tramites = await prisma.tramite.findMany();
-    return NextResponse.json(tramites, { status: 200 });
+    return new Response(JSON.stringify(tramites), { status: 200 });
   } catch (error) {
     console.error("Error al obtener trámites:", error);
-    return NextResponse.json(
-      { error: "Error interno del servidor" },
+    return new Response(
+      JSON.stringify({ error: "Error interno del servidor" }),
       { status: 500 }
     );
   }
 }
 
 // Cambiar el estado de un trámite (PUT)
-export async function PUT(req: Request) {
+export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
     const { id, nuevoStatus } = body;
 
     if (!id || !nuevoStatus) {
-      return NextResponse.json(
-        { error: "ID y nuevoStatus son obligatorios" },
+      return new Response(
+        JSON.stringify({ error: "ID y nuevoStatus son obligatorios" }),
         { status: 400 }
       );
     }
@@ -97,19 +100,25 @@ export async function PUT(req: Request) {
     });
 
     if (!tramite) {
-      return NextResponse.json(
-        { error: "Trámite no encontrado" },
+      return new Response(
+        JSON.stringify({ error: "Trámite no encontrado" }),
         { status: 404 }
       );
     }
 
-    // Verificar y parsear el historial de estados
-    const historialActual =
-      typeof tramite.statusHistory === "string"
-        ? JSON.parse(tramite.statusHistory)
-        : Array.isArray(tramite.statusHistory)
-        ? tramite.statusHistory
-        : []; // Valor predeterminado en caso de error
+    // Manejar statusHistory
+    let historialActual: { status: string; fecha: string }[] = [];
+
+    if (Array.isArray(tramite.statusHistory)) {
+      historialActual = tramite.statusHistory;
+    } else if (typeof tramite.statusHistory === "string") {
+      try {
+        historialActual = JSON.parse(tramite.statusHistory);
+      } catch (e) {
+        console.error("Error al parsear statusHistory:", e);
+        historialActual = [];
+      }
+    }
 
     // Agregar el nuevo estado al historial
     historialActual.push({
@@ -122,15 +131,22 @@ export async function PUT(req: Request) {
       where: { id },
       data: {
         status: nuevoStatus,
-        statusHistory: JSON.stringify(historialActual),
+        statusHistory: historialActual, // Guardar como JSON
       },
     });
 
-    return NextResponse.json(tramiteActualizado, { status: 200 });
+    return new Response(
+      JSON.stringify({
+        id: tramiteActualizado.id,
+        estadoActualizado: tramiteActualizado.status,
+        historial: tramiteActualizado.statusHistory,
+      }),
+      { status: 200 }
+    );
   } catch (error) {
     console.error("Error al cambiar estado del trámite:", error);
-    return NextResponse.json(
-      { error: "Error interno del servidor" },
+    return new Response(
+      JSON.stringify({ error: "Error interno del servidor" }),
       { status: 500 }
     );
   }
