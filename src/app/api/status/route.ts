@@ -15,8 +15,8 @@ export async function PUT(req: Request) {
   }
 
   // Parsear el historial existente
-  const statusHistory = tramite.statusHistory
-    ? JSON.parse(tramite.statusHistory)
+  const statusHistory = typeof tramite.statusHistory === "string"
+    ? JSON.parse(tramite.statusHistory) // Validación de tipo
     : [];
 
   // Agregar el nuevo estado al historial
