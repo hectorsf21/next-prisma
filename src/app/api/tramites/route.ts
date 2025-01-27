@@ -1,52 +1,28 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
 
-// Crear un trámite (POST)
+// Crear un trámite con documentos relacionados (POST)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const {
-      nombreSolicitante,
-      nombreDocumento,
-      tipoDocumento,
-      tipoPapel,
-      carrera,
-      cantidad,
-      numeroTransferencia,
-      monto, // Asegúrate de que este campo está incluido en el cuerpo
-    } = body;
+    const { nombreSolicitante, numeroTransferencia, documentos } = body;
 
-    if (
-      !nombreSolicitante ||
-      !nombreDocumento ||
-      !tipoDocumento ||
-      !tipoPapel ||
-      !carrera ||
-      !cantidad ||
-      !numeroTransferencia ||
-      monto === undefined
-    ) {
+    if (!nombreSolicitante || !numeroTransferencia || !documentos || !Array.isArray(documentos) || documentos.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Todos los campos son obligatorios" }),
+        JSON.stringify({ error: "Todos los campos son obligatorios, incluyendo documentos." }),
         { status: 400 }
       );
     }
 
-    // Generar un código único (5 dígitos)
+    // Generar un código único para el trámite
     const codigoUnico = Math.floor(10000 + Math.random() * 90000).toString();
 
-    // Crear el trámite con estado inicial y su historial
+    // Crear el trámite con los documentos relacionados
     const tramite = await prisma.tramite.create({
       data: {
         codigo: codigoUnico,
         nombreSolicitante,
-        nombreDocumento,
-        tipoDocumento,
-        tipoPapel,
-        carrera,
-        cantidad,
         numeroTransferencia,
-        monto, // Almacena el monto proporcionado
         status: "EN_REVISION",
         statusHistory: [
           {
@@ -54,6 +30,19 @@ export async function POST(req: NextRequest) {
             fecha: new Date().toISOString(),
           },
         ],
+        documentos: {
+          create: documentos.map((doc: any) => ({
+            nombre: doc.nombre,
+            tipoDocumento: doc.tipoDocumento,
+            tipoPapel: doc.tipoPapel,
+            precio: doc.precio,
+            cantidad: doc.cantidad,
+            carrera: doc.carrera,
+          })),
+        },
+      },
+      include: {
+        documentos: true, // Incluir documentos en la respuesta
       },
     });
 
@@ -67,10 +56,15 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Obtener todos los trámites (GET)
+// Obtener todos los trámites con documentos relacionados (GET)
 export async function GET() {
   try {
-    const tramites = await prisma.tramite.findMany();
+    const tramites = await prisma.tramite.findMany({
+      include: {
+        documentos: true, // Incluir documentos relacionados
+      },
+    });
+
     return new Response(JSON.stringify(tramites), { status: 200 });
   } catch (error) {
     console.error("Error al obtener trámites:", error);
@@ -81,16 +75,16 @@ export async function GET() {
   }
 }
 
-// Cambiar el estado de un trámite (PUT)
-export async function PUT(req: Request) {
+// Actualizar un trámite (PUT)
+export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, nuevoStatus } = body;
+    const { id, nuevoStatus, numeroTransferencia } = body;
 
-    if (!id || !nuevoStatus) {
+    if (!id || !nuevoStatus || !numeroTransferencia) {
       return new Response(
-        JSON.stringify({ error: "ID y nuevoStatus son obligatorios" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ error: "ID, nuevoStatus y numeroTransferencia son obligatorios." }),
+        { status: 400 }
       );
     }
 
@@ -101,68 +95,65 @@ export async function PUT(req: Request) {
 
     if (!tramite) {
       return new Response(
-        JSON.stringify({ error: "Trámite no encontrado" }),
-        { status: 404, headers: { "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Trámite no encontrado." }),
+        { status: 404 }
       );
     }
 
-    // Inicializar el historial de estados
-    let historialActual: { status: string; fecha: string }[] = [];
+    // Actualizar el historial de estados
+    const historialActualizado = Array.isArray(tramite.statusHistory)
+      ? [...tramite.statusHistory, { status: nuevoStatus, fecha: new Date().toISOString() }]
+      : [{ status: nuevoStatus, fecha: new Date().toISOString() }];
 
-    if (Array.isArray(tramite.statusHistory)) {
-      historialActual = (tramite.statusHistory as any[]).filter(
-        (item): item is { status: string; fecha: string } =>
-          item !== null &&
-          typeof item === "object" &&
-          typeof (item as any).status === "string" &&
-          typeof (item as any).fecha === "string"
-      );
-    } else if (typeof tramite.statusHistory === "string") {
-      try {
-        const parsedHistory = JSON.parse(tramite.statusHistory);
-        if (Array.isArray(parsedHistory)) {
-          historialActual = parsedHistory.filter(
-            (item): item is { status: string; fecha: string } =>
-              item !== null &&
-              typeof item === "object" &&
-              typeof (item as any).status === "string" &&
-              typeof (item as any).fecha === "string"
-          );
-        }
-      } catch (e) {
-        console.error("Error al parsear statusHistory:", e);
-        historialActual = [];
-      }
-    }
-
-    // Agregar el nuevo estado al historial
-    historialActual.push({
-      status: nuevoStatus,
-      fecha: new Date().toISOString(),
-    });
-
-    // Actualizar el estado y el historial del trámite
+    // Actualizar el trámite
     const tramiteActualizado = await prisma.tramite.update({
       where: { id },
       data: {
         status: nuevoStatus,
-        statusHistory: JSON.stringify(historialActual),
+        numeroTransferencia,
+        statusHistory: historialActualizado,
+      },
+      include: {
+        documentos: true, // Incluir documentos en la respuesta
       },
     });
 
-    return new Response(
-      JSON.stringify({
-        id: tramiteActualizado.id,
-        estadoActualizado: tramiteActualizado.status,
-        historial: tramiteActualizado.statusHistory,
-      }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
-    );
+    return new Response(JSON.stringify(tramiteActualizado), { status: 200 });
   } catch (error) {
-    console.error("Error al cambiar estado del trámite:", error);
+    console.error("Error al actualizar trámite:", error);
     return new Response(
       JSON.stringify({ error: "Error interno del servidor" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500 }
+    );
+  }
+}
+
+// Eliminar un trámite y sus documentos relacionados (DELETE)
+export async function DELETE(req: NextRequest) {
+  try {
+    const { id } = await req.json();
+
+    if (!id) {
+      return new Response(
+        JSON.stringify({ error: "ID es obligatorio para eliminar un trámite." }),
+        { status: 400 }
+      );
+    }
+
+    // Eliminar el trámite y sus documentos relacionados
+    await prisma.tramite.delete({
+      where: { id },
+    });
+
+    return new Response(
+      JSON.stringify({ message: "Trámite eliminado correctamente." }),
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("Error al eliminar trámite:", error);
+    return new Response(
+      JSON.stringify({ error: "Error interno del servidor" }),
+      { status: 500 }
     );
   }
 }

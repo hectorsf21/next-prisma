@@ -25,22 +25,21 @@ model Documento {
   tipoDocumento String
   tipoPapel     String
   precio        Float
+  cantidad      Int      @default(1)  
+  carrera       String   @default("") 
+  tramiteId     Int?                 
+  tramite       Tramite?  @relation(fields: [tramiteId], references: [id]) // Relación opcional
   creadoEn      DateTime @default(now())
 }
 
 model Tramite {
-  id                  Int      @id @default(autoincrement())
-  codigo              String   @unique @db.VarChar(5)
-  status              String   @default("EN_REVISION")
-  nombreSolicitante   String   @db.VarChar(255)
-  nombreDocumento     String   @db.VarChar(255)
-  tipoDocumento       String   @db.VarChar(100)
-  tipoPapel           String   @db.VarChar(100)
-  carrera             String   @db.VarChar(100)
-  cantidad            Int
-  numeroTransferencia String   @db.VarChar(255)
-  statusHistory       Json     @default("[]")
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  monto               Float    @default(0.0)
+  id                  Int        @id @default(autoincrement())
+  codigo              String     @unique @db.VarChar(5)
+  status              String     @default("EN_REVISION")
+  nombreSolicitante   String     @db.VarChar(255)
+  numeroTransferencia String     @db.VarChar(255)
+  statusHistory       Json       @default("[]")
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  documentos          Documento[] // Relación con múltiples documentos
 }

@@ -3,6 +3,11 @@
 import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
 import axios from "axios";
 import TablaTramites from "@/components/TablaTramites";
+import TablaPrecios from "@/components/TablaPrecios";
+import { FiShoppingCart } from "react-icons/fi";
+import FormularioCarrito from "@/components/FormularioCarrito";
+import { useGlobalState } from "@/context/GlobalStateContext";
+import Link from "next/link";
 
 // Interfaces para los datos
 interface FormData {
@@ -51,13 +56,16 @@ export default function CrearTramite() {
   const [tramites, setTramites] = useState<Tramite[]>([]);
   const [loading, setLoading] = useState(false);
 
+  // Obtener datos del carrito del estado global
+  const { cart } = useGlobalState();
+
   // Obtener trámites desde la base de datos
   useEffect(() => {
     const fetchTramites = async () => {
       try {
         const res = await axios.get("/api/tramites");
         setTramites(res.data);
-        console.log(res.data)
+        console.log(res.data);
       } catch (error) {
         console.error("Error al obtener los trámites:", error);
       }
@@ -113,8 +121,58 @@ export default function CrearTramite() {
   };
 
   return (
-    <div className="p-6 max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Crear Trámite</h1>
+    <div className="p-6 max-w-6xl mx-auto">
+      {/* Nav pegajoso */}
+      <nav className="bg-white shadow-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo o Título */}
+            <div className="flex-shrink-0">
+              <h1 className="text-2xl font-bold text-gray-800">
+                <span className="text-blue-500">SOLI</span>CITUDES
+              </h1>
+            </div>
+
+            {/* Menú de Navegación */}
+            <div className="hidden md:flex space-x-8">
+              <a
+                href="#"
+                className="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Inicio
+              </a>
+              <a
+                href="#"
+                className="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Productos
+              </a>
+              <a
+                href="#"
+                className="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Contacto
+              </a>
+            </div>
+
+            {/* Ícono del carrito */}
+            <Link href={'/compras'}>
+            <div className="relative">
+              <button className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full">
+                <FiShoppingCart size={24} className="text-gray-800" />
+              </button>
+
+              {/* Indicador de cantidad de productos */}
+              <span className="absolute top-0 right-0 inline-flex items-center justify-center h-5 w-5 text-xs font-bold text-white bg-blue-500 rounded-full">
+                {cart.length} {/* Mostrar la cantidad de productos */}
+              </span>
+            </div>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      <h1 className="text-center text-2xl font-bold mb-4">Crear Trámite</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="text"
@@ -207,6 +265,8 @@ export default function CrearTramite() {
       </form>
 
       <TablaTramites tramites={tramites} />
+      <TablaPrecios />
+      <FormularioCarrito />
     </div>
   );
 }
