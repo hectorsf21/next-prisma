@@ -82,7 +82,7 @@ export async function GET() {
 }
 
 // Cambiar el estado de un trámite (PUT)
-export async function PUT(req: NextRequest) {
+export async function PUT(req: Request) {
   try {
     const body = await req.json();
     const { id, nuevoStatus } = body;
@@ -90,7 +90,7 @@ export async function PUT(req: NextRequest) {
     if (!id || !nuevoStatus) {
       return new Response(
         JSON.stringify({ error: "ID y nuevoStatus son obligatorios" }),
-        { status: 400 }
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
@@ -102,17 +102,20 @@ export async function PUT(req: NextRequest) {
     if (!tramite) {
       return new Response(
         JSON.stringify({ error: "Trámite no encontrado" }),
-        { status: 404 }
+        { status: 404, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    // Manejar statusHistory con validación
+    // Inicializar el historial de estados
     let historialActual: { status: string; fecha: string }[] = [];
 
     if (Array.isArray(tramite.statusHistory)) {
       historialActual = tramite.statusHistory.filter(
         (item): item is { status: string; fecha: string } =>
-          item && typeof item.status === "string" && typeof item.fecha === "string"
+          item !== null &&
+          typeof item === "object" &&
+          typeof item.status === "string" &&
+          typeof item.fecha === "string"
       );
     } else if (typeof tramite.statusHistory === "string") {
       try {
@@ -120,7 +123,10 @@ export async function PUT(req: NextRequest) {
         if (Array.isArray(parsedHistory)) {
           historialActual = parsedHistory.filter(
             (item): item is { status: string; fecha: string } =>
-              item && typeof item.status === "string" && typeof item.fecha === "string"
+              item !== null &&
+              typeof item === "object" &&
+              typeof item.status === "string" &&
+              typeof item.fecha === "string"
           );
         }
       } catch (e) {
@@ -140,7 +146,7 @@ export async function PUT(req: NextRequest) {
       where: { id },
       data: {
         status: nuevoStatus,
-        statusHistory: historialActual,
+        statusHistory: JSON.stringify(historialActual),
       },
     });
 
@@ -150,13 +156,13 @@ export async function PUT(req: NextRequest) {
         estadoActualizado: tramiteActualizado.status,
         historial: tramiteActualizado.statusHistory,
       }),
-      { status: 200 }
+      { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("Error al cambiar estado del trámite:", error);
     return new Response(
       JSON.stringify({ error: "Error interno del servidor" }),
-      { status: 500 }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
