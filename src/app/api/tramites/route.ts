@@ -110,12 +110,12 @@ export async function PUT(req: Request) {
     let historialActual: { status: string; fecha: string }[] = [];
 
     if (Array.isArray(tramite.statusHistory)) {
-      historialActual = tramite.statusHistory.filter(
+      historialActual = (tramite.statusHistory as any[]).filter(
         (item): item is { status: string; fecha: string } =>
           item !== null &&
           typeof item === "object" &&
-          typeof item.status === "string" &&
-          typeof item.fecha === "string"
+          typeof (item as any).status === "string" &&
+          typeof (item as any).fecha === "string"
       );
     } else if (typeof tramite.statusHistory === "string") {
       try {
@@ -125,8 +125,8 @@ export async function PUT(req: Request) {
             (item): item is { status: string; fecha: string } =>
               item !== null &&
               typeof item === "object" &&
-              typeof item.status === "string" &&
-              typeof item.fecha === "string"
+              typeof (item as any).status === "string" &&
+              typeof (item as any).fecha === "string"
           );
         }
       } catch (e) {
