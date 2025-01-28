@@ -5,11 +5,20 @@ import prisma from "@/lib/prisma";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { nombreSolicitante, numeroTransferencia, documentos } = body;
+    const { nombreSolicitante, numeroTransferencia, monto, documentos } = body;
 
-    if (!nombreSolicitante || !numeroTransferencia || !documentos || !Array.isArray(documentos) || documentos.length === 0) {
+    if (
+      !nombreSolicitante ||
+      !numeroTransferencia ||
+      monto === undefined 
+      // !documentos ||
+      // !Array.isArray(documentos) ||
+      // documentos.length === 0
+    ) {
       return new Response(
-        JSON.stringify({ error: "Todos los campos son obligatorios, incluyendo documentos." }),
+        JSON.stringify({
+          error: "Todos los campos son obligatorios, incluyendo documentos.",
+        }),
         { status: 400 }
       );
     }
@@ -23,6 +32,7 @@ export async function POST(req: NextRequest) {
         codigo: codigoUnico,
         nombreSolicitante,
         numeroTransferencia,
+        monto, // Nuevo campo monto
         status: "EN_REVISION",
         statusHistory: [
           {
@@ -79,11 +89,13 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, nuevoStatus, numeroTransferencia } = body;
+    const { id, nuevoStatus, numeroTransferencia, monto } = body;
 
-    if (!id || !nuevoStatus || !numeroTransferencia) {
+    if (!id || !nuevoStatus || !numeroTransferencia || monto === undefined) {
       return new Response(
-        JSON.stringify({ error: "ID, nuevoStatus y numeroTransferencia son obligatorios." }),
+        JSON.stringify({
+          error: "ID, nuevoStatus, numeroTransferencia y monto son obligatorios.",
+        }),
         { status: 400 }
       );
     }
@@ -111,6 +123,7 @@ export async function PUT(req: NextRequest) {
       data: {
         status: nuevoStatus,
         numeroTransferencia,
+        monto, // Actualizar el monto
         statusHistory: historialActualizado,
       },
       include: {

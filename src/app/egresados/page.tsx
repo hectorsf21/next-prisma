@@ -12,7 +12,6 @@ import Link from "next/link";
 // Interfaces para los datos
 interface FormData {
   nombreSolicitante: string;
-  nombreDocumento: string;
   tipoDocumento: string;
   tipoPapel: string;
   carrera: string;
@@ -25,7 +24,6 @@ interface Tramite {
   id: number;
   codigo: string;
   nombreSolicitante: string;
-  nombreDocumento: string;
   tipoDocumento: string;
   tipoPapel: string;
   carrera: string;
@@ -44,13 +42,12 @@ const tiposPapel = ["PAPEL SIMPLE", "PAPEL DE SEGURIDAD"];
 export default function CrearTramite() {
   const [formData, setFormData] = useState<FormData>({
     nombreSolicitante: "",
-    nombreDocumento: "",
     tipoDocumento: tiposDocumento[0],
     tipoPapel: tiposPapel[0],
     carrera: "",
     cantidad: 1,
     numeroTransferencia: "",
-    monto: 0, // Inicializar monto con 0
+    monto: 0, 
   });
 
   const [tramites, setTramites] = useState<Tramite[]>([]);
@@ -65,7 +62,7 @@ export default function CrearTramite() {
       try {
         const res = await axios.get("/api/tramites");
         setTramites(res.data);
-        console.log(res.data);
+        // console.log(res.data);
       } catch (error) {
         console.error("Error al obtener los trámites:", error);
       }
@@ -87,24 +84,28 @@ export default function CrearTramite() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
+  
     try {
+      // Generar automáticamente un código único para el trámite
       const codigoUnico = Math.floor(10000 + Math.random() * 90000).toString();
-      const tramite = { codigo: codigoUnico, ...formData };
-
+  
+      // Crear el objeto del trámite con un arreglo vacío para documentos
+      const tramite = {
+        codigo: codigoUnico, // Código único generado automáticamente
+        nombreSolicitante: formData.nombreSolicitante,
+        numeroTransferencia: formData.numeroTransferencia,
+        monto: formData.monto,
+        documentos: [], // Arreglo vacío para pruebas
+      };
+  
       // Enviar el trámite al backend
       await axios.post("/api/tramites", tramite);
-
-      // Actualizar la lista de trámites
-      const res = await axios.get("/api/tramites");
-      setTramites(res.data);
-
-      alert("Trámite creado correctamente.");
-
-      // Resetear el formulario
+  
+      alert("Trámite de prueba creado correctamente.");
+  
+      // Resetear el formulario después de enviarlo
       setFormData({
         nombreSolicitante: "",
-        nombreDocumento: "",
         tipoDocumento: tiposDocumento[0],
         tipoPapel: tiposPapel[0],
         carrera: "",
@@ -113,12 +114,13 @@ export default function CrearTramite() {
         monto: 0,
       });
     } catch (error) {
-      console.error("Error al crear el trámite:", error);
-      alert("Hubo un error al crear el trámite.");
+      console.error("Error al crear el trámite de prueba:", error);
+      alert("Hubo un error al crear el trámite de prueba.");
     } finally {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -135,24 +137,24 @@ export default function CrearTramite() {
 
             {/* Menú de Navegación */}
             <div className="hidden md:flex space-x-8">
-              <a
-                href="#"
+              <Link
+                href="coordinacion"
                 className="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium"
               >
-                Inicio
-              </a>
-              <a
-                href="#"
+                COORDINACION
+              </Link>
+
+              <Link href="fundesurg"
                 className="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium"
               >
-                Productos
-              </a>
-              <a
-                href="#"
+                FUNDESUR
+                </Link>
+                <Link
+                href="superusuario"
                 className="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium"
               >
-                Contacto
-              </a>
+                SUPERUSUARIO
+                </Link>
             </div>
 
             {/* Ícono del carrito */}
@@ -183,15 +185,7 @@ export default function CrearTramite() {
           className="w-full p-2 border rounded"
           required
         />
-        <input
-          type="text"
-          name="nombreDocumento"
-          placeholder="Nombre del documento"
-          value={formData.nombreDocumento}
-          onChange={handleChange}
-          className="w-full p-2 border rounded"
-          required
-        />
+        <h2 className="font-bold">Tipo de documento</h2>
         <select
           name="tipoDocumento"
           value={formData.tipoDocumento}
@@ -204,6 +198,7 @@ export default function CrearTramite() {
             </option>
           ))}
         </select>
+        <h2 className="font-bold">Tipo de papel</h2>
         <select
           name="tipoPapel"
           value={formData.tipoPapel}
@@ -225,6 +220,7 @@ export default function CrearTramite() {
           className="w-full p-2 border rounded"
           required
         />
+        <h2 className="font-bold">Cantidad</h2>
         <input
           type="number"
           name="cantidad"
@@ -235,6 +231,7 @@ export default function CrearTramite() {
           min="1"
           required
         />
+        <h2 className="font-bold">Numero de transferencia</h2>
         <input
           type="text"
           name="numeroTransferencia"
@@ -244,6 +241,7 @@ export default function CrearTramite() {
           className="w-full p-2 border rounded"
           required
         />
+        <h2 className="font-bold">Monto</h2>
         <input
           type="number"
           name="monto"
@@ -251,8 +249,6 @@ export default function CrearTramite() {
           value={formData.monto}
           onChange={handleChange}
           className="w-full p-2 border rounded"
-          min="0"
-          step="0.01"
           required
         />
         <button

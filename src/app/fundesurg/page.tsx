@@ -10,6 +10,7 @@ interface Tramite {
   id: number;
   codigo: string;
   nombreSolicitante: string;
+  numeroTransferencia:string;
   nombreDocumento: string;
   status: string;
   monto: number;
@@ -38,7 +39,7 @@ export default function Fundesurg() {
             ? JSON.parse(tramite.statusHistory)
             : tramite.statusHistory,
       }));
-      
+      console.log(res.data)
       // Filtrar trámites por estado con tipo explícito
       setTramitesRevision(parsedTramites.filter((t: Tramite) => t.status === "EN_REVISION"));
       setTramitesOtros(parsedTramites.filter((t: Tramite) => t.status !== "EN_REVISION"));
@@ -84,7 +85,7 @@ export default function Fundesurg() {
             <tr key={tramite.id} className="bg-white hover:bg-gray-50">
               <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.nombreSolicitante}</td>
-              <td className="border border-gray-300 px-4 py-2">{tramite.nombreDocumento}</td>
+              <td className="border border-gray-300 px-4 py-2">{tramite.numeroTransferencia}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
               <td className="border border-gray-300 px-4 py-2">${tramite.monto.toFixed(2)}</td>
               <td className="border border-gray-300 px-4 py-2 text-center">
@@ -122,7 +123,7 @@ export default function Fundesurg() {
           </tr>
         </thead>
         <tbody>
-          {tramitesOtros.map((tramite) => (
+          {/* {tramitesOtros.map((tramite) => (
             <tr key={tramite.id} className="bg-white hover:bg-gray-50">
               <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.nombreSolicitante}</td>
@@ -138,7 +139,7 @@ export default function Fundesurg() {
                 </button>
               </td>
             </tr>
-          ))}
+          ))} */}
         </tbody>
         <tfoot>
           <tr>

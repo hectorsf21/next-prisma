@@ -29,7 +29,7 @@ model Documento {
   carrera       String   @default("") 
   tramiteId     Int?                 
   tramite       Tramite?  @relation(fields: [tramiteId], references: [id]) // Relación opcional
-  creadoEn      DateTime @default(now())
+  creadoEn      DateTime @default(now()) 
 }
 
 model Tramite {
@@ -38,6 +38,7 @@ model Tramite {
   status              String     @default("EN_REVISION")
   nombreSolicitante   String     @db.VarChar(255)
   numeroTransferencia String     @db.VarChar(255)
+  monto               Float      @default(0.0) 
   statusHistory       Json       @default("[]")
   createdAt           DateTime   @default(now())
   updatedAt           DateTime   @updatedAt

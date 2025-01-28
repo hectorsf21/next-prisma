@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Documento" ADD COLUMN     "monto" DOUBLE PRECISION NOT NULL DEFAULT 0.0;
