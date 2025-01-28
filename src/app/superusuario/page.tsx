@@ -6,8 +6,9 @@ import FormDocument from "@/components/FormDocument";
 import TablaDocument from "@/components/TablaDocument";
 import TablaUsuario from "@/components/TablaUsuario";
 import FormUsuario from "@/components/FormUsuario";
+import TramitesComponent from "@/components/TramitesComponents";
 
-// FUNCIONALIDADES DEL FORMUSUARIO
+// CREACION DE USUARIOS
 // Interfaces para tipar datos
 interface User {
   id: number;
@@ -44,8 +45,9 @@ interface FormData {
     reportesSolicitudes: boolean;
   };
 }
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-// FUNCIONALIDADES DE FORMDOCUMENT XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+// CREACION DE DOCUMENTOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 const tiposDocumento = ["NACIONAL", "INTERNACIONAL"];
 const tiposPapel = ["PAPEL BLANCO", "PAPEL SEGURIDAD"];
 
@@ -66,6 +68,7 @@ interface Documento {
 
 // Componente principal del CRUD
 export default function SuperUsuario() {
+
   // ESTADO DE DATOS DE LOS USUARIOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   const [users, setUsers] = useState<User[]>([]);
   const [formData, setFormData] = useState<FormData>({
@@ -85,9 +88,9 @@ export default function SuperUsuario() {
   });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-
-// ESTADO DE DATOS DE LOS DOCUMENTOS
+// ESTADO DE DATOS DE LOS DOCUMENTOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 const [documents, setDocuments] = useState<Documento[]>([]);
 const [loadingDocuments, setLoadingDocuments] = useState(false);
 const [documentFormData, setDocumentFormData] = useState<DocumentFormData>({
@@ -98,8 +101,9 @@ const [documentFormData, setDocumentFormData] = useState<DocumentFormData>({
 });
 
 const [loadingDocument, setLoadingDocument] = useState(false);
+// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
-// FUNCIONALIDADES DEL COMPONENTE FORMDOCUMENT
+// FUNCIONALIDADES DEL COMPONENTE FORMDOCUMENT XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 const handleDocumentChange = (
   e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
 ) => {
@@ -140,7 +144,7 @@ const handleDocumentSubmit = async (e: FormEvent) => {
   }
 };
 
-//  CARGA DE USUARIOS AL COMPONENTE PADRE XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+//  CARGA DE USUARIOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -156,7 +160,7 @@ const handleDocumentSubmit = async (e: FormEvent) => {
     }
   };
 
-  //  CARGA DE USUARIOS AL COMPONENTE PADRE TERMINA XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  //  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 
   // CARGA DE DOCUMENTOS QUE VAN AL COMPONENTE HIJO TABLADOCUMENT XXXXXXXXXXXXXXXXXXXXXXX
@@ -331,7 +335,8 @@ const handleDeleteDocument = async (id: number) => {
         onDelete={handleDeleteDocument}
        />
       </div>
-      
+      {/* CRUD TRAMITES */}
+      <TramitesComponent/>
     </div>
   );
 }

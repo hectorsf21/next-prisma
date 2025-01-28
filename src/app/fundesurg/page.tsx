@@ -20,6 +20,7 @@ interface Tramite {
 export default function Fundesurg() {
   const [tramitesRevision, setTramitesRevision] = useState<Tramite[]>([]);
   const [tramitesOtros, setTramitesOtros] = useState<Tramite[]>([]);
+  const [alltramites, setAllTramites] = useState<Tramite[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTramite, setSelectedTramite] = useState<Tramite | null>(null);
 
@@ -39,10 +40,11 @@ export default function Fundesurg() {
             ? JSON.parse(tramite.statusHistory)
             : tramite.statusHistory,
       }));
-      console.log(res.data)
+     
       // Filtrar trámites por estado con tipo explícito
-      setTramitesRevision(parsedTramites.filter((t: Tramite) => t.status === "EN_REVISION"));
-      setTramitesOtros(parsedTramites.filter((t: Tramite) => t.status !== "EN_REVISION"));
+      setTramitesRevision(parsedTramites.filter((t: Tramite) => t.status === "PENDIENTE"));
+      setTramitesOtros(parsedTramites.filter((t: Tramite) => t.status !== "PENDIENTE"));
+      setAllTramites(parsedTramites);
     } catch (error) {
       console.error("Error al obtener trámites:", error);
     }
@@ -57,8 +59,10 @@ export default function Fundesurg() {
   };
 
 
-  // Calcular el total de montos para "OTROS ESTADOS"
-  const totalMontoOtros = tramitesOtros.reduce(
+ 
+  
+  // Calcular el total de montos de todos los trámites
+  const totalMonto = tramitesOtros.reduce(
     (acc: number, tramite: Tramite) => acc + tramite.monto,
     0
   );
@@ -109,7 +113,7 @@ export default function Fundesurg() {
           ))}
         </tbody>
       </table>
-      {/* Tabla para otros estados */}
+      {/* LISTA DE SOLICITUDES PROCESADAS */}
       <h2 className="text-2xl font-bold mb-6">Lista de Trámites Procesadas</h2>
       <table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200">
         <thead className="text-xs text-gray-700 uppercase bg-gray-100">
@@ -123,7 +127,7 @@ export default function Fundesurg() {
           </tr>
         </thead>
         <tbody>
-          {/* {tramitesOtros.map((tramite) => (
+          {tramitesOtros.map((tramite) => (
             <tr key={tramite.id} className="bg-white hover:bg-gray-50">
               <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.nombreSolicitante}</td>
@@ -139,7 +143,7 @@ export default function Fundesurg() {
                 </button>
               </td>
             </tr>
-          ))} */}
+          ))}
         </tbody>
         <tfoot>
           <tr>
@@ -147,7 +151,7 @@ export default function Fundesurg() {
               Total
             </td>
             <td className="border border-gray-300 px-4 py-2 font-bold">
-              ${totalMontoOtros.toFixed(2)}
+              ${totalMonto.toFixed(2)}
             </td>
             <td></td>
           </tr>

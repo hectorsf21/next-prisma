@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import axios from "axios";
 
 interface Documento {
@@ -21,6 +21,19 @@ interface CartItem {
   precio: number;
 }
 
+interface Tramite {
+  id: number;
+  codigo: string;
+  nombreSolicitante: string;
+  numeroTransferencia: string;
+  monto: number;
+  status: string;
+  statusHistory: { status: string; fecha: string }[];
+  createdAt: string;
+  updatedAt: string;
+  documentos: Documento[];
+}
+
 interface GlobalStateContextType {
   isOpen: boolean;
   setIsOpen: (value: boolean) => void;
@@ -32,6 +45,8 @@ interface GlobalStateContextType {
   clearCart: () => void;
   selectedDocument: Documento | null;
   setSelectedDocument: (doc: Documento | null) => void;
+  tramites: Tramite[];
+  fetchTramites: () => void;
 }
 
 const GlobalStateContext = createContext<GlobalStateContextType | undefined>(undefined);
@@ -39,25 +54,21 @@ const GlobalStateContext = createContext<GlobalStateContextType | undefined>(und
 export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false); // Estado booleano global
   const [documents, setDocuments] = useState<Documento[]>([]); // Estado para documentos
-  const [cart, setCart] = useState<CartItem[]>([]); // Estado del carrito
-  const [loading, setLoading] = useState(true); // Bandera para evitar renderizados prematuros
-  const [selectedDocument, setSelectedDocument] = useState<Documento | null>(null); // Documento seleccionado
-
-  // Cargar el carrito desde localStorage al inicializar
-  useEffect(() => {
-    const storedCart = typeof window !== "undefined" ? localStorage.getItem("cart") : null;
-    if (storedCart) {
-      setCart(JSON.parse(storedCart));
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    if (typeof window !== "undefined") {
+      const storedCart = localStorage.getItem("cart");
+      return storedCart ? JSON.parse(storedCart) : [];
     }
-    setLoading(false); // Marcar como cargado
-  }, []);
+    return [];
+  });
+
+  const [selectedDocument, setSelectedDocument] = useState<Documento | null>(null); // Estado para documento seleccionado
+  const [tramites, setTramites] = useState<Tramite[]>([]); // Estado para trámites
 
   // Sincronizar el carrito con localStorage
   useEffect(() => {
-    if (!loading) {
-      localStorage.setItem("cart", JSON.stringify(cart));
-    }
-  }, [cart, loading]);
+    localStorage.setItem("cart", JSON.stringify(cart));
+  }, [cart]);
 
   // Función para obtener los documentos desde la API
   const fetchDocuments = async () => {
@@ -66,6 +77,16 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
       setDocuments(response.data);
     } catch (error) {
       console.error("Error al obtener los documentos:", error);
+    }
+  };
+
+  // Función para obtener los trámites desde la API
+  const fetchTramites = async () => {
+    try {
+      const response = await axios.get("/api/tramites");
+      setTramites(response.data);
+    } catch (error) {
+      console.error("Error al obtener los trámites:", error);
     }
   };
 
@@ -84,14 +105,11 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
     setCart([]);
   };
 
-  // Llamar a fetchDocuments al cargar el componente
+  // Llama a fetchDocuments y fetchTramites al cargar el componente
   useEffect(() => {
     fetchDocuments();
+    fetchTramites();
   }, []);
-
-  if (loading) {
-    return null; // Evitar renderizar hasta que el carrito esté sincronizado
-  }
 
   return (
     <GlobalStateContext.Provider
@@ -106,6 +124,8 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
         clearCart,
         selectedDocument,
         setSelectedDocument,
+        tramites,
+        fetchTramites,
       }}
     >
       {children}

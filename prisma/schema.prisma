@@ -35,7 +35,7 @@ model Documento {
 model Tramite {
   id                  Int        @id @default(autoincrement())
   codigo              String     @unique @db.VarChar(5)
-  status              String     @default("EN_REVISION")
+  status              String     @default("PENDIENTE")
   nombreSolicitante   String     @db.VarChar(255)
   numeroTransferencia String     @db.VarChar(255)
   monto               Float      @default(0.0) 

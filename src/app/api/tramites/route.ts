@@ -32,11 +32,11 @@ export async function POST(req: NextRequest) {
         codigo: codigoUnico,
         nombreSolicitante,
         numeroTransferencia,
-        monto, // Nuevo campo monto
-        status: "EN_REVISION",
+        monto,
+        status: "PENDIENTE",
         statusHistory: [
           {
-            status: "EN_REVISION",
+            status: "PENDIENTE",
             fecha: new Date().toISOString(),
           },
         ],
