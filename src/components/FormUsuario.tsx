@@ -57,7 +57,7 @@ export default function FormUsuario({
       </select>
 
       {/* Permisos de solicitudes */}
-      {(formData.role === "COORDINACION" || formData.role === "FUNDEURG") && (
+      {(formData.role === "COORDINACION" || formData.role === "FUNDESURG") && (
         <>
           {/* Permisos de Solicitudes */}
           <div className="border p-4 rounded">

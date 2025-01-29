@@ -27,7 +27,7 @@ interface User {
 }
 
 
-const roles = ["SUPERUSUARIO", "COORDINACION", "FUNDEURG", "SOLICITANTE"];
+const roles = ["SUPERUSUARIO", "COORDINACION", "FUNDESURG", "SOLICITANTE"];
 
 interface FormData {
   id?: number;

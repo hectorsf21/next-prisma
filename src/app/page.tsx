@@ -11,24 +11,25 @@ export default function LoginForm() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  // Maneja el envío del formulario
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      // Enviar las credenciales al backend
-      const res = await axios.post("/api/login", { email, password });
+      const res = await axios.post("/api/login", { email, password }); // Enviar email y password
 
-      if (res.status === 200) {
-        const { redirect } = res.data; // Obtener la URL de redirección
-        router.push(redirect); // Redirigir según el rol del usuario
+      const { redirectUrl } = res.data; // Ahora recibimos la URL de redirección desde el backend
+
+      console.log("Redirigiendo a:", redirectUrl);
+
+      // Redirigir según la URL que se recibe
+      if (redirectUrl) {
+        router.push(redirectUrl); // Usamos la URL de redirección recibida
       }
     } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Error al iniciar sesión. Inténtalo de nuevo."
-      );
+      console.error("Error al iniciar sesión:", err);
+      setError(err.response?.data?.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
     }
@@ -39,7 +40,6 @@ export default function LoginForm() {
       <div className="w-full max-w-md p-8 bg-white rounded shadow-md">
         <h2 className="text-2xl font-bold text-center mb-6">Inicio de Sesión</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Campo de correo */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700">
               Correo Electrónico
@@ -55,7 +55,6 @@ export default function LoginForm() {
             />
           </div>
 
-          {/* Campo de contraseña */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Contraseña
@@ -71,7 +70,6 @@ export default function LoginForm() {
             />
           </div>
 
-          {/* Botón o Spinner */}
           <div>
             {loading ? (
               <div className="flex justify-center">
@@ -87,7 +85,6 @@ export default function LoginForm() {
             )}
           </div>
 
-          {/* Mostrar error si existe */}
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </form>
       </div>
