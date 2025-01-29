@@ -7,6 +7,8 @@ import TablaDocument from "@/components/TablaDocument";
 import TablaUsuario from "@/components/TablaUsuario";
 import FormUsuario from "@/components/FormUsuario";
 import TramitesComponent from "@/components/TramitesComponents";
+import Link from "next/link";
+import { FiMenu, FiX } from "react-icons/fi";
 
 // CREACION DE USUARIOS
 // Interfaces para tipar datos
@@ -52,6 +54,7 @@ const tiposDocumento = ["NACIONAL", "INTERNACIONAL"];
 const tiposPapel = ["PAPEL BLANCO", "PAPEL SEGURIDAD"];
 
 interface DocumentFormData {
+  id?: string;
   nombreDocumento: string;
   tipoDocumento: string;
   tipoPapel: string;
@@ -71,6 +74,8 @@ export default function SuperUsuario() {
 
   // ESTADO DE DATOS DE LOS USUARIOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   const [users, setUsers] = useState<User[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
+  const toggleMenu = () => setIsOpen(!isOpen);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     email: "",
@@ -120,29 +125,43 @@ const handleDocumentSubmit = async (e: FormEvent) => {
   setLoadingDocument(true);
 
   try {
-    // Enviar los datos al backend usando axios
-    const response = await axios.post("/api/documentos", {
-      nombre: documentFormData.nombreDocumento,
-      tipoDocumento: documentFormData.tipoDocumento,
-      tipoPapel: documentFormData.tipoPapel,
-      precio: parseFloat(documentFormData.precio), // Convertir el precio a número
-    });
+    if (documentFormData.id) {
+      // Si tiene ID, es una edición (PUT)
+      await axios.put(`/api/documentos`, {
+        id: parseInt(documentFormData.id), // Convertir a número si la BD lo requiere
+        nombre: documentFormData.nombreDocumento,
+        tipoDocumento: documentFormData.tipoDocumento,
+        tipoPapel: documentFormData.tipoPapel,
+        precio: parseFloat(documentFormData.precio),
+      });
+    } else {
+      // Si no tiene ID, es un nuevo documento (POST)
+      await axios.post("/api/documentos", {
+        nombre: documentFormData.nombreDocumento,
+        tipoDocumento: documentFormData.tipoDocumento,
+        tipoPapel: documentFormData.tipoPapel,
+        precio: parseFloat(documentFormData.precio),
+      });
+    }
 
-    console.log("Respuesta del backend:", response.data);
-    await fetchDocuments();
-    // Resetear el formulario después de enviarlo
+    await fetchDocuments(); // Recargar la lista de documentos
+
+    // Resetear el formulario
     setDocumentFormData({
+      id: undefined,
       nombreDocumento: "",
       tipoDocumento: tiposDocumento[0],
       tipoPapel: tiposPapel[0],
       precio: "",
     });
+
   } catch (error) {
-    console.error("Error al enviar el formulario de documentos:", error);
+    console.error("Error al procesar el documento:", error);
   } finally {
     setLoadingDocument(false);
   }
 };
+
 
 //  CARGA DE USUARIOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   useEffect(() => {
@@ -282,12 +301,14 @@ const handleDocumentSubmit = async (e: FormEvent) => {
 // CRUD DE DOCUMENTOS COMIENZA XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 const handleEditDocument = (document: Documento) => {
   setDocumentFormData({
-    nombreDocumento: document.nombre, 
+    id: document.id.toString(), // Convertimos el número a string
+    nombreDocumento: document.nombre,
     tipoDocumento: document.tipoDocumento,
     tipoPapel: document.tipoPapel,
-    precio: document.precio.toString(), 
+    precio: document.precio.toString(),
   });
 };
+
 
 const handleDeleteDocument = async (id: number) => {
   try {
@@ -304,9 +325,66 @@ const handleDeleteDocument = async (id: number) => {
 
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Gestión de Usuarios</h1>
+    <div className="p-6 mx-auto">
+       <nav className="bg-blue-700 text-white shadow-md">
+      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+        {/* Logo */}
+        <Link href="/" className="text-2xl font-bold">
+          Gestión Admin
+        </Link>
 
+        {/* Menú Desktop */}
+        <ul className="hidden md:flex space-x-6">
+          <li>
+            <Link href="/superusuario" className="hover:text-gray-300 transition">SUPERUSUARIO</Link>
+          </li>
+          <li>
+            <Link href="/coordinacion" className="hover:text-gray-300 transition">COORDINACIÓN</Link>
+          </li>
+          <li>
+            <Link href="/fundesurg" className="hover:text-gray-300 transition">FUNDESURG</Link>
+          </li>
+          <li>
+            <Link href="/egresados" className="hover:text-gray-300 transition">SOLICITANTES</Link>
+          </li>
+        </ul>
+
+        {/* Botón Menú Móvil */}
+        <button className="md:hidden text-white focus:outline-none" onClick={toggleMenu}>
+          {isOpen ? <FiX size={28} /> : <FiMenu size={28} />}
+        </button>
+      </div>
+
+      {/* Menú Mobile */}
+      {isOpen && (
+        <div className="md:hidden bg-blue-800 text-white py-4">
+          <ul>
+            <li>
+              <Link href="/superusuario" className="block px-6 py-2 hover:bg-blue-900" onClick={toggleMenu}>
+                SUPERUSUARIO
+              </Link>
+            </li>
+            <li>
+              <Link href="/coordinacion" className="block px-6 py-2 hover:bg-blue-900" onClick={toggleMenu}>
+                COORDINACIÓN
+              </Link>
+            </li>
+            <li>
+              <Link href="/fundesurg" className="block px-6 py-2 hover:bg-blue-900" onClick={toggleMenu}>
+                FUNDESURG
+              </Link>
+            </li>
+            <li>
+              <Link href="/egresados" className="block px-6 py-2 hover:bg-blue-900" onClick={toggleMenu}>
+                SOLICITANTES
+              </Link>
+            </li>
+          </ul>
+        </div>
+      )}
+    </nav>
+      <h1 className="text-center mt-4 text-2xl font-bold mb-4">Gestión de Usuarios</h1>
+      <div className="max-w-4xl mx-auto">
       {/* Formulario */}
       <FormUsuario
       formData={formData}
@@ -337,6 +415,7 @@ const handleDeleteDocument = async (id: number) => {
       </div>
       {/* CRUD TRAMITES */}
       <TramitesComponent/>
+      </div>
     </div>
   );
 }

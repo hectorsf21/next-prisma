@@ -29,8 +29,9 @@ export default function TablaDocument({
   }
 
   return (
-    <table className="w-full mt-6 border-collapse border border-gray-200">
-      <thead>
+    <div className="overflow-x-auto max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg shadow-md">
+    <table className="w-full border-collapse">
+      <thead className="bg-gray-100 sticky top-0 z-10">
         <tr>
           <th className="border border-gray-300 px-4 py-2">ID</th>
           <th className="border border-gray-300 px-4 py-2">Nombre</th>
@@ -68,5 +69,6 @@ export default function TablaDocument({
         ))}
       </tbody>
     </table>
+  </div>
   );
 }
