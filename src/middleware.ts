@@ -3,7 +3,13 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 // Determinamos la clave secreta dependiendo del entorno
-const JWT_SECRET = process.env.JWT_SECRET ?? process.env.NEXT_PUBLIC_JWT_SECRET;
+let JWT_SECRET: string;
+
+if (process.env.NODE_ENV === "production") {
+  JWT_SECRET = process.env.JWT_SECRET!;
+} else {
+  JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET!;
+}
 
 export async function middleware(req: NextRequest) {
   if (!JWT_SECRET) {
@@ -24,16 +30,16 @@ export async function middleware(req: NextRequest) {
 
     console.log("✅ Token válido:", payload);
 
-    const userRole = payload.role as UserRole | undefined; // Convertimos el rol a un tipo seguro
+    // Definimos los roles posibles con un tipo específico
+    type UserRole = "SUPERUSUARIO" | "COORDINACION" | "SOLICITANTE" | "FUNDESURG";
 
-    if (!userRole || !Object.keys(roleRoutes).includes(userRole)) {
+    // Verificamos que el rol sea válido
+    const userRole = payload.role as UserRole;
+    if (!userRole || !["SUPERUSUARIO", "COORDINACION", "SOLICITANTE", "FUNDESURG"].includes(userRole)) {
       console.warn("⚠️ El token no contiene un rol válido.");
       return NextResponse.redirect(new URL("/", req.url));
     }
 
-    // Definimos los roles posibles con un tipo específico
-    type UserRole = "SUPERUSUARIO" | "COORDINACION" | "SOLICITANTE" | "FUNDESURG";
-    
     // Definimos las rutas según el rol
     const roleRoutes: Record<UserRole, string> = {
       SUPERUSUARIO: "ALL", // Permite acceso a todo
@@ -48,11 +54,11 @@ export async function middleware(req: NextRequest) {
     }
 
     // Obtener la ruta asignada al rol
-    const allowedRoute = roleRoutes[userRole] ?? "/login"; // Usa nullish coalescing operator (??) para valores no definidos
+    const allowedRoute = roleRoutes[userRole] || "/login";
 
     // Verifica si la ruta actual pertenece al usuario
     const currentPath = req.nextUrl.pathname;
-    if (!currentPath.startsWith(allowedRoute)) {
+    if (!currentPath.includes(allowedRoute)) {
       console.warn(`🔄 Redirigiendo a ${allowedRoute} según el rol.`);
       return NextResponse.redirect(new URL(allowedRoute, req.url));
     }
