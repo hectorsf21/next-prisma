@@ -36,8 +36,11 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
+    // Definimos los roles posibles con un tipo específico
+    type UserRole = "SUPERUSUARIO" | "COORDINACION" | "SOLICITANTE" | "FUNDESURG";
+    
     // Definimos las rutas según el rol
-    const roleRoutes: Record<string, string> = {
+    const roleRoutes: Record<UserRole, string> = {
       SUPERUSUARIO: "ALL", // Permite acceso a todo
       COORDINACION: "/coordinacion",
       SOLICITANTE: "/egresados",
