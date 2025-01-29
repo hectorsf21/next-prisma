@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET;
+// Determinamos la clave secreta dependiendo del entorno
+let JWT_SECRET: string;
+
+if (process.env.NODE_ENV === "production") {
+  JWT_SECRET = process.env.JWT_SECRET!;
+} else {
+  JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET!;
+}
 
 export async function middleware(req: NextRequest) {
   if (!JWT_SECRET) {
