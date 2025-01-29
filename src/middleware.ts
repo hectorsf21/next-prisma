@@ -21,7 +21,7 @@ export async function middleware(req: NextRequest) {
 
   if (!token) {
     console.warn("❌ Token no encontrado en cookies.");
-    return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL("/", req.url));
   }
 
   try {
@@ -54,7 +54,7 @@ export async function middleware(req: NextRequest) {
     }
 
     // Obtener la ruta asignada al rol
-    const allowedRoute = roleRoutes[userRole] || "/login";
+    const allowedRoute = roleRoutes[userRole] || "/";
 
     // Verifica si la ruta actual pertenece al usuario
     const currentPath = req.nextUrl.pathname;
