@@ -3,13 +3,7 @@ import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
 // Determinamos la clave secreta dependiendo del entorno
-let JWT_SECRET: string;
-
-if (process.env.NODE_ENV === "production") {
-  JWT_SECRET = process.env.JWT_SECRET!;
-} else {
-  JWT_SECRET = process.env.NEXT_PUBLIC_JWT_SECRET!;
-}
+const JWT_SECRET = process.env.JWT_SECRET ?? process.env.NEXT_PUBLIC_JWT_SECRET;
 
 export async function middleware(req: NextRequest) {
   if (!JWT_SECRET) {
@@ -30,8 +24,9 @@ export async function middleware(req: NextRequest) {
 
     console.log("✅ Token válido:", payload);
 
-    const userRole = payload.role;
-    if (!userRole) {
+    const userRole = payload.role as UserRole | undefined; // Convertimos el rol a un tipo seguro
+
+    if (!userRole || !Object.keys(roleRoutes).includes(userRole)) {
       console.warn("⚠️ El token no contiene un rol válido.");
       return NextResponse.redirect(new URL("/", req.url));
     }
@@ -53,11 +48,11 @@ export async function middleware(req: NextRequest) {
     }
 
     // Obtener la ruta asignada al rol
-    const allowedRoute = roleRoutes[userRole] || "/login";
+    const allowedRoute = roleRoutes[userRole] ?? "/login"; // Usa nullish coalescing operator (??) para valores no definidos
 
     // Verifica si la ruta actual pertenece al usuario
     const currentPath = req.nextUrl.pathname;
-    if (!currentPath.includes(allowedRoute)) {
+    if (!currentPath.startsWith(allowedRoute)) {
       console.warn(`🔄 Redirigiendo a ${allowedRoute} según el rol.`);
       return NextResponse.redirect(new URL(allowedRoute, req.url));
     }
