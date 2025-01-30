@@ -16,43 +16,65 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { nombre, tipoDocumento, tipoPapel, precio } = body;
 
-    if (!nombre || !tipoDocumento || !tipoPapel || precio === undefined) {
-      return NextResponse.json({ error: "Todos los campos son obligatorios" }, { status: 400 });
+    // Verificar si body es un array o un solo objeto
+    const documentosArray = Array.isArray(body) ? body : [body];
+
+    // Validar que cada documento tenga los campos necesarios
+    for (const doc of documentosArray) {
+      if (!doc.nombre) {
+        return NextResponse.json({ error: "El campo 'nombre' es obligatorio" }, { status: 400 });
+      }
+      if (!doc.tipoPapel) {
+        return NextResponse.json({ error: "El campo 'tipoPapel' es obligatorio" }, { status: 400 });
+      }
+      if (doc.precio === undefined) {
+        return NextResponse.json({ error: "El campo 'precio' es obligatorio" }, { status: 400 });
+      }
     }
 
-    const documento = await prisma.documento.create({
-      data: {
-        nombre,
-        tipoDocumento,
-        tipoPapel,
-        precio: parseFloat(precio),
-      },
-    });
+    // Transformar la data
+    const documentosData = documentosArray.map(doc => ({
+      nombre: doc.nombre,
+      tipoDocumento: doc.tipoPapel === "PAPEL SIMPLE" ? "NACIONAL" : "INTERNACIONAL",
+      tipoPapel: doc.tipoPapel,
+      precio: parseFloat(doc.precio)
+    }));
 
-    return NextResponse.json(documento, { status: 201 });
+    // Si solo hay un documento, usa `create`, si hay varios, usa `createMany`
+    if (documentosData.length === 1) {
+      const documento = await prisma.documento.create({ data: documentosData[0] });
+      return NextResponse.json(documento, { status: 201 });
+    } else {
+      const documentos = await prisma.documento.createMany({ data: documentosData });
+      return NextResponse.json(documentos, { status: 201 });
+    }
+
   } catch (error) {
-    console.error("Error al crear documento:", error);
-    return NextResponse.json({ error: "Error al crear documento" }, { status: 500 });
+    console.error("Error al crear documento(s):", error);
+    return NextResponse.json({ error: "Error al crear documento(s)" }, { status: 500 });
   }
 }
+
 
 // Actualizar un documento (PUT)
 export async function PUT(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, nombre, tipoDocumento, tipoPapel, precio } = body;
+    const { id, nombre, tipoPapel, precio } = body; // Eliminamos tipoDocumento del body
 
-    if (!id || !nombre || !tipoDocumento || !tipoPapel || precio === undefined) {
+    if (!id || !nombre || !tipoPapel || precio === undefined) {
       return NextResponse.json({ error: "Todos los campos son obligatorios" }, { status: 400 });
     }
+
+    // Determinar el tipo de documento automáticamente según el tipo de papel
+    const tipoDocumento = tipoPapel === "PAPEL SIMPLE" ? "NACIONAL" : "INTERNACIONAL";
 
     const documento = await prisma.documento.update({
       where: { id },
       data: {
         nombre,
-        tipoDocumento,
+        tipoDocumento, // Se asigna automáticamente
         tipoPapel,
         precio: parseFloat(precio),
       },

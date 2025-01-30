@@ -34,6 +34,22 @@ interface Tramite {
   documentos: Documento[];
 }
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string | object;
+  permisosSolicitudes?: {
+    verNoValidas: boolean;
+    verValidarEntrega: boolean;
+    verEntregadas: boolean;
+  };
+  permisosReportes?: {
+    reportesFinancieros: boolean;
+    reportesSolicitudes: boolean;
+  };
+}
+
 interface GlobalStateContextType {
   isOpen: boolean;
   setIsOpen: (value: boolean) => void;
@@ -47,13 +63,15 @@ interface GlobalStateContextType {
   setSelectedDocument: (doc: Documento | null) => void;
   tramites: Tramite[];
   fetchTramites: () => void;
+  users: User[]; // Nuevo estado para usuarios
+  fetchUsers: () => void; // Nueva función para obtener usuarios
 }
 
 const GlobalStateContext = createContext<GlobalStateContextType | undefined>(undefined);
 
 export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
-  const [isOpen, setIsOpen] = useState(false); // Estado booleano global
-  const [documents, setDocuments] = useState<Documento[]>([]); // Estado para documentos
+  const [isOpen, setIsOpen] = useState(false);
+  const [documents, setDocuments] = useState<Documento[]>([]);
   const [cart, setCart] = useState<CartItem[]>(() => {
     if (typeof window !== "undefined") {
       const storedCart = localStorage.getItem("cart");
@@ -61,9 +79,9 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
     }
     return [];
   });
-
-  const [selectedDocument, setSelectedDocument] = useState<Documento | null>(null); // Estado para documento seleccionado
-  const [tramites, setTramites] = useState<Tramite[]>([]); // Estado para trámites
+  const [selectedDocument, setSelectedDocument] = useState<Documento | null>(null);
+  const [tramites, setTramites] = useState<Tramite[]>([]);
+  const [users, setUsers] = useState<User[]>([]); // Nuevo estado para usuarios
 
   // Sincronizar el carrito con localStorage
   useEffect(() => {
@@ -90,6 +108,16 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  // Función para obtener los usuarios desde la API
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get("/api/users");
+      setUsers(res.data);
+    } catch (error) {
+      console.error("Error al obtener los usuarios:", error);
+    }
+  };
+
   // Función para agregar un elemento al carrito
   const addToCart = (item: CartItem) => {
     setCart((prevCart) => [...prevCart, item]);
@@ -105,10 +133,11 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
     setCart([]);
   };
 
-  // Llama a fetchDocuments y fetchTramites al cargar el componente
+  // Llama a fetchDocuments, fetchTramites y fetchUsers al cargar el componente
   useEffect(() => {
     fetchDocuments();
     fetchTramites();
+    fetchUsers();
   }, []);
 
   return (
@@ -126,6 +155,8 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
         setSelectedDocument,
         tramites,
         fetchTramites,
+        users, // Nuevo estado para usuarios
+        fetchUsers, // Nueva función para obtener usuarios
       }}
     >
       {children}

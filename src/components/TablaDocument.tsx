@@ -48,8 +48,8 @@ export default function TablaDocument({
             <td className="border border-gray-300 px-4 py-2">{doc.nombre}</td>
             <td className="border border-gray-300 px-4 py-2">{doc.tipoDocumento}</td>
             <td className="border border-gray-300 px-4 py-2">{doc.tipoPapel}</td>
-            <td className="border border-gray-300 px-4 py-2">${doc.precio.toFixed(2)}</td>
-            <td className="border border-gray-300 px-4 py-2 flex space-x-4">
+            <td className="border border-gray-300 px-4 py-2">{doc.precio.toFixed(2)} BS</td>
+            <td className="border border-gray-300 px-4 py-10 flex space-x-4">
               <button
                 onClick={() => onEdit(doc)}
                 className="text-blue-500 hover:text-blue-700"

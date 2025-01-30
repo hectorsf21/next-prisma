@@ -3,14 +3,12 @@ import React from "react";
 interface FormDocumentProps {
   formData: {
     nombreDocumento: string;
-    tipoDocumento: string;
     tipoPapel: string;
     precio: string;
   };
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   handleSubmit: (e: React.FormEvent) => void;
   loading: boolean;
-  tiposDocumento: string[];
   tiposPapel: string[];
 }
 
@@ -19,7 +17,6 @@ export default function FormDocument({
   handleChange,
   handleSubmit,
   loading,
-  tiposDocumento,
   tiposPapel,
 }: FormDocumentProps) {
   return (
@@ -42,24 +39,7 @@ export default function FormDocument({
           />
         </div>
 
-        <div>
-          <label htmlFor="tipoDocumento" className="block text-sm font-medium text-gray-700">
-            Tipo de Documento
-          </label>
-          <select
-            id="tipoDocumento"
-            name="tipoDocumento"
-            value={formData.tipoDocumento}
-            onChange={handleChange}
-            className="w-full mt-1 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {tiposDocumento.map((tipo) => (
-              <option key={tipo} value={tipo}>
-                {tipo}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Se eliminó el campo Tipo de Documento, ya que ahora lo determina el backend */}
 
         <div>
           <label htmlFor="tipoPapel" className="block text-sm font-medium text-gray-700">

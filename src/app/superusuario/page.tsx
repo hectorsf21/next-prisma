@@ -1,420 +1,45 @@
-"use client";
+'use client';
+import { FaUsers, FaFileAlt } from "react-icons/fa"; // Importamos los íconos necesarios
+import { useRouter } from "next/navigation";
 
-import React, { useState, useEffect, ChangeEvent, FormEvent } from "react";
-import axios from "axios";
-import FormDocument from "@/components/FormDocument";
-import TablaDocument from "@/components/TablaDocument";
-import TablaUsuario from "@/components/TablaUsuario";
-import FormUsuario from "@/components/FormUsuario";
-import TramitesComponent from "@/components/TramitesComponents";
-import Link from "next/link";
-import { FiMenu, FiX } from "react-icons/fi";
+export default function PanelControl() {
+  const router = useRouter();
 
-// CREACION DE USUARIOS
-// Interfaces para tipar datos
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string | object; // Role puede ser string o JSON
-  permisosSolicitudes?: {
-    verNoValidas: boolean;
-    verValidarEntrega: boolean;
-    verEntregadas: boolean;
+  const send_panel_usuario = () => {
+    router.push('/superusuario/panel-usuarios');
   };
-  permisosReportes?: {
-    reportesFinancieros: boolean;
-    reportesSolicitudes: boolean;
-  };
-}
-
-
-const roles = ["SUPERUSUARIO", "COORDINACION", "FUNDESURG", "SOLICITANTE"];
-
-interface FormData {
-  id?: number;
-  name: string;
-  email: string;
-  password: string;
-  role: string | object; // Campo para rol
-  permisosSolicitudes?: {
-    verNoValidas: boolean;
-    verValidarEntrega: boolean;
-    verEntregadas: boolean;
-  };
-  permisosReportes?: {
-    reportesFinancieros: boolean;
-    reportesSolicitudes: boolean;
-  };
-}
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-// CREACION DE DOCUMENTOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-const tiposDocumento = ["NACIONAL", "INTERNACIONAL"];
-const tiposPapel = ["PAPEL BLANCO", "PAPEL SEGURIDAD"];
-
-interface DocumentFormData {
-  id?: string;
-  nombreDocumento: string;
-  tipoDocumento: string;
-  tipoPapel: string;
-  precio: string;
-}
-
-interface Documento {
-  id: number;
-  nombre: string;
-  tipoDocumento: string;
-  tipoPapel: string;
-  precio: number;
-}
-
-// Componente principal del CRUD
-export default function SuperUsuario() {
-
-  // ESTADO DE DATOS DE LOS USUARIOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  const [users, setUsers] = useState<User[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const toggleMenu = () => setIsOpen(!isOpen);
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    email: "",
-    password: "",
-    role: roles[3], // Rol predeterminado: "SOLICITANTE"
-    permisosSolicitudes: {
-      verNoValidas: false,
-      verValidarEntrega: false,
-      verEntregadas: false,
-    },
-    permisosReportes: {
-      reportesFinancieros: false,
-      reportesSolicitudes: false,
-    },
-  });
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-// ESTADO DE DATOS DE LOS DOCUMENTOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-const [documents, setDocuments] = useState<Documento[]>([]);
-const [loadingDocuments, setLoadingDocuments] = useState(false);
-const [documentFormData, setDocumentFormData] = useState<DocumentFormData>({
-  nombreDocumento: "",
-  tipoDocumento: tiposDocumento[0],
-  tipoPapel: tiposPapel[0],
-  precio: "",
-});
-
-const [loadingDocument, setLoadingDocument] = useState(false);
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-// FUNCIONALIDADES DEL COMPONENTE FORMDOCUMENT XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-const handleDocumentChange = (
-  e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-) => {
-  const { name, value } = e.target;
-  setDocumentFormData((prev) => ({
-    ...prev,
-    [name]: value,
-  }));
-};
-
-// Manejar el envío del formulario de documentos
-const handleDocumentSubmit = async (e: FormEvent) => {
-  e.preventDefault();
-  setLoadingDocument(true);
-
-  try {
-    if (documentFormData.id) {
-      // Si tiene ID, es una edición (PUT)
-      await axios.put(`/api/documentos`, {
-        id: parseInt(documentFormData.id), // Convertir a número si la BD lo requiere
-        nombre: documentFormData.nombreDocumento,
-        tipoDocumento: documentFormData.tipoDocumento,
-        tipoPapel: documentFormData.tipoPapel,
-        precio: parseFloat(documentFormData.precio),
-      });
-    } else {
-      // Si no tiene ID, es un nuevo documento (POST)
-      await axios.post("/api/documentos", {
-        nombre: documentFormData.nombreDocumento,
-        tipoDocumento: documentFormData.tipoDocumento,
-        tipoPapel: documentFormData.tipoPapel,
-        precio: parseFloat(documentFormData.precio),
-      });
-    }
-
-    await fetchDocuments(); // Recargar la lista de documentos
-
-    // Resetear el formulario
-    setDocumentFormData({
-      id: undefined,
-      nombreDocumento: "",
-      tipoDocumento: tiposDocumento[0],
-      tipoPapel: tiposPapel[0],
-      precio: "",
-    });
-
-  } catch (error) {
-    console.error("Error al procesar el documento:", error);
-  } finally {
-    setLoadingDocument(false);
+  const send_panel_solicitudes = () => {
+    router.push('/superusuario/panel-solicitudes');
   }
-};
-
-
-//  CARGA DE USUARIOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // Obtener todos los usuarios
-  const fetchUsers = async () => {
-    try {
-      const res = await axios.get("/api/users");
-      setUsers(res.data);
-      console.log('fetch es:', res.data)
-    } catch (error) {
-      console.error("Error al obtener los usuarios:", error);
-    }
-  };
-
-  //  XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-
-  // CARGA DE DOCUMENTOS QUE VAN AL COMPONENTE HIJO TABLADOCUMENT XXXXXXXXXXXXXXXXXXXXXXX
-  const fetchDocuments = async () => {
-    try {
-      setLoadingDocuments(true);
-      const response = await axios.get("/api/documentos");
-      setDocuments(response.data); // Almacena los documentos obtenidos
-    } catch (error) {
-      console.error("Error al obtener los documentos:", error);
-    } finally {
-      setLoadingDocuments(false);
-    }
-  };
-
-  // Obtener documentos al montar el componente
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-  // TERMINA CARGA DE DOCUMENTOS QUE VAN AL COMPONENTE HIJO TABLADOCUMENT XXXXXXXXXXXXXXXXXXXXXXX
-
-
-  // CRUD USUARIOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-  // Manejar los cambios del formulario
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const target = e.target as HTMLInputElement | HTMLSelectElement;
-    const { name, value, type } = target;
-
-    if (type === "checkbox") {
-      const { checked } = target as HTMLInputElement;
-      const [category, field] = name.split(".");
-      setFormData((prev) => ({
-        ...prev,
-        [category]: {
-          ...(prev[category as keyof FormData] as Record<string, boolean>),
-          [field]: checked,
-        },
-      }));
-    } else {
-      setFormData((prev) => ({ ...prev, [name]: value }));
-    }
-  };
-
-  // Manejar la creación o actualización del usuario
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    console.log('formData es:',formData)
-    try {
-      if (isEditing && formData.id) {
-        await axios.put(`/api/users?id=${formData.id}`, formData);
-      } else {
-        // Crear nuevo usuario
-        await axios.post("/api/users", formData);
-      }
-      fetchUsers();
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        role: roles[3],
-        permisosSolicitudes: {
-          verNoValidas: false,
-          verValidarEntrega: false,
-          verEntregadas: false,
-        },
-        permisosReportes: {
-          reportesFinancieros: false,
-          reportesSolicitudes: false,
-        },
-      });
-      setIsEditing(false);
-    } catch (error) {
-      console.error("Error al guardar el usuario:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Manejar la edición de un usuario
-  const handleEdit = (user: User) => {
-    setFormData({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      password: "",
-      role: user.role,
-      permisosSolicitudes: user.permisosSolicitudes || {
-        verNoValidas: false,
-        verValidarEntrega: false,
-        verEntregadas: false,
-      },
-      permisosReportes: user.permisosReportes || {
-        reportesFinancieros: false,
-        reportesSolicitudes: false,
-      },
-    });
-    setIsEditing(true);
-  };
-
-  // Manejar la eliminación de un usuario
-  const handleDelete = async (id: number) => {
-    if (confirm("¿Estás seguro de eliminar este usuario?")) {
-      try {
-        await axios.delete(`/api/users?id=${id}`);
-        fetchUsers();
-      } catch (error) {
-        console.error("Error al eliminar el usuario:", error);
-      }
-    }
-  };
-// TERMINA CRUD USUARIOS XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-
-
-
-// CRUD DE DOCUMENTOS COMIENZA XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-const handleEditDocument = (document: Documento) => {
-  setDocumentFormData({
-    id: document.id.toString(), // Convertimos el número a string
-    nombreDocumento: document.nombre,
-    tipoDocumento: document.tipoDocumento,
-    tipoPapel: document.tipoPapel,
-    precio: document.precio.toString(),
-  });
-};
-
-
-const handleDeleteDocument = async (id: number) => {
-  try {
-    await axios.delete(`/api/documentos?id=${id}`);
-    fetchDocuments(); // Vuelve a cargar los documentos después de eliminarlos
-  } catch (error) {
-    console.error("Error al eliminar el documento:", error);
-  }
-};
-
-// XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-
-
 
   return (
-    <div className="p-6 mx-auto">
-       <nav className="bg-blue-700 text-white shadow-md">
-      <div className="container mx-auto px-6 py-4 flex justify-between items-center">
-        {/* Logo */}
-        <Link href="/" className="text-2xl font-bold">
-          Gestión Admin
-        </Link>
-
-        {/* Menú Desktop */}
-        <ul className="hidden md:flex space-x-6">
-          <li>
-            <Link href="/superusuario" className="hover:text-gray-300 transition">SUPERUSUARIO</Link>
-          </li>
-          <li>
-            <Link href="/coordinacion" className="hover:text-gray-300 transition">COORDINACIÓN</Link>
-          </li>
-          <li>
-            <Link href="/fundesurg" className="hover:text-gray-300 transition">FUNDESURG</Link>
-          </li>
-          <li>
-            <Link href="/egresados" className="hover:text-gray-300 transition">SOLICITANTES</Link>
-          </li>
-        </ul>
-
-        {/* Botón Menú Móvil */}
-        <button className="md:hidden text-white focus:outline-none" onClick={toggleMenu}>
-          {isOpen ? <FiX size={28} /> : <FiMenu size={28} />}
-        </button>
-      </div>
-
-      {/* Menú Mobile */}
-      {isOpen && (
-        <div className="md:hidden bg-blue-800 text-white py-4">
-          <ul>
-            <li>
-              <Link href="/superusuario" className="block px-6 py-2 hover:bg-blue-900" onClick={toggleMenu}>
-                SUPERUSUARIO
-              </Link>
-            </li>
-            <li>
-              <Link href="/coordinacion" className="block px-6 py-2 hover:bg-blue-900" onClick={toggleMenu}>
-                COORDINACIÓN
-              </Link>
-            </li>
-            <li>
-              <Link href="/fundesurg" className="block px-6 py-2 hover:bg-blue-900" onClick={toggleMenu}>
-                FUNDESURG
-              </Link>
-            </li>
-            <li>
-              <Link href="/egresados" className="block px-6 py-2 hover:bg-blue-900" onClick={toggleMenu}>
-                SOLICITANTES
-              </Link>
-            </li>
-          </ul>
+    <div className="grid gap-4 md:grid-cols-2 max-w-4xl w-full px-4">
+      {/* Panel de usuario */}
+      <div
+        onClick={send_panel_usuario}
+        className="cursor-pointer bg-white p-4 hover:shadow-lg transition-shadow rounded-lg"
+      >
+        <div className="flex flex-row items-center justify-between pb-2">
+          <div className="text-lg font-medium">Panel de Usuarios</div>
+          <FaUsers className="h-8 w-8 text-violet-500" /> {/* Icono cambiado */}
         </div>
-      )}
-    </nav>
-      <h1 className="text-center mt-4 text-2xl font-bold mb-4">Gestión de Usuarios</h1>
-      <div className="max-w-4xl mx-auto">
-      {/* Formulario */}
-      <FormUsuario
-      formData={formData}
-      handleChange={handleChange}
-      handleSubmit={handleSubmit}
-      isEditing={isEditing}
-      loading={loading}
-      roles={roles}
-/>
-
-      {/* Tabla */}
-      <TablaUsuario users={users} onEdit={handleEdit} onDelete={handleDelete} />
-      <div className="mt-12">
-      <FormDocument
-        formData={documentFormData}
-        handleChange={handleDocumentChange}
-        handleSubmit={handleDocumentSubmit}
-        loading={loadingDocument}
-        tiposDocumento={tiposDocumento}
-        tiposPapel={tiposPapel}
-      />
-      <TablaDocument 
-        documents={documents}
-        loading={loadingDocuments}
-        onEdit={handleEditDocument}
-        onDelete={handleDeleteDocument}
-       />
+        <div>
+          <p className="text-sm text-gray-600">Gestión de usuarios del sistema</p>
+        </div>
       </div>
-      {/* CRUD TRAMITES */}
-      <TramitesComponent/>
+
+      {/* Panel de Solicitudes */}
+      <div
+        onClick={send_panel_solicitudes} 
+        className="cursor-pointer bg-white p-4 hover:shadow-lg transition-shadow rounded-lg"
+      >
+        <div className="flex flex-row items-center justify-between pb-2">
+          <div className="text-lg font-medium">Panel de Solicitudes</div>
+          <FaFileAlt className="h-8 w-8 text-pink-500" />
+        </div>
+        <div>
+          <p className="text-sm text-gray-600">Gestión de solicitudes pendientes</p>
+        </div>
       </div>
     </div>
   );
