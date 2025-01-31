@@ -19,6 +19,7 @@ interface Tramite {
 
 export default function Fundesurg() {
   const [tramitesRevision, setTramitesRevision] = useState<Tramite[]>([]);
+  const [tramitesDevueltos, setTramitesDevueltos] = useState<Tramite[]>([]);
   const [Alltramites, setAllTramites] = useState<Tramite[]>([]);
   const [tramitesOtros, setTramitesOtros] = useState<Tramite[]>([]);
   const [loadingButtons, setLoadingButtons] = useState<{ [key: number]: boolean }>({});
@@ -41,12 +42,16 @@ export default function Fundesurg() {
       }));
       console.log(parsedTramites)
       setAllTramites(parsedTramites);
+      setTramitesDevueltos(parsedTramites.filter((t: Tramite) => t.status === "DEVUELTO"));
       setTramitesRevision(parsedTramites.filter((t: Tramite) => t.status === "PENDIENTE"));
-      setTramitesOtros(parsedTramites.filter((t: Tramite) => t.status !== "PENDIENTE"));
+      setTramitesOtros(parsedTramites.filter((t: Tramite) => !["PENDIENTE", "DEVUELTO"].includes(t.status)));
+
     } catch (error) {
       console.error("Error al obtener trámites:", error);
     }
   };
+
+  // FUNCION PROCESAR STATUS
 
   // Manejar el procesamiento del trámite
   const procesarTramite = async (id: number) => {
@@ -61,7 +66,22 @@ export default function Fundesurg() {
       setLoadingButtons((prev) => ({ ...prev, [id]: false }));
     }
   };
-  // MONTO TOTAL DE TRAMITES PROCESADOS
+  
+  // FUNCION DEVOLVER TRAMITE
+  // Nueva función para cambiar el estado a "DEVUELTO"
+const devolverTramite = async (id: number) => {
+  setLoadingButtons((prev) => ({ ...prev, [id]: true }));
+
+  try {
+    await axios.put("/api/status", { id, nuevoStatus: "DEVUELTO" });
+    await fetchTramites(); // Actualiza la lista después de la devolución
+  } catch (error) {
+    console.error("Error al devolver el trámite:", error);
+  } finally {
+    setLoadingButtons((prev) => ({ ...prev, [id]: false }));
+  }
+};
+
 
   return (
     <div className="p-6">
@@ -78,6 +98,7 @@ export default function Fundesurg() {
             <th className="border border-gray-300 px-4 py-2">Monto</th>
             <th className="border border-gray-300 px-4 py-2">Ver Detalle</th>
             <th className="border border-gray-300 px-4 py-2">Acciones</th>
+            <th className="border border-gray-300 px-4 py-2">Devolucion</th>
           </tr>
         </thead>
         <tbody>
@@ -105,21 +126,32 @@ export default function Fundesurg() {
                   {loadingButtons[tramite.id] ? "Procesando..." : "Procesar"}
                 </button>
               </td>
+              {/* DEVOLVER */}
+              <td className="border border-gray-300 px-4 py-2"> 
+                <button
+                  onClick={() => devolverTramite(tramite.id)}
+                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                  disabled={loadingButtons[tramite.id]}
+                >
+                  {loadingButtons[tramite.id] ? "Procesando..." : "Devolver"}
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-    <tr className="bg-gray-200 font-bold">
-      <td className="border border-gray-300 px-4 py-2" colSpan={4}>
-        Total Monto por Procesado:
-      </td>
-      <td className="border border-gray-300 px-4 py-2 text-blue-600">
-        {tramitesRevision.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
-      </td>
-      <td className="border border-gray-300 px-4 py-2"></td>
-    </tr>
-  </tfoot>
-  
+        <tr className="bg-gray-200 font-bold">
+          <td className="border border-gray-300 px-4 py-2" colSpan={4}>
+            Total Monto por Procesado:
+          </td>
+          <td className="border border-gray-300 px-4 py-2 text-blue-600">
+            {tramitesRevision.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
+          </td>
+          <td className="border border-gray-300 px-4 py-2"></td>
+          <td className="border border-gray-300 px-4 py-2"></td>
+          <td className="border border-gray-300 px-4 py-2"></td>
+        </tr>
+      </tfoot>
       </table>
 
       {/* Lista de Trámites Procesados */}
@@ -129,18 +161,16 @@ export default function Fundesurg() {
           <tr>
             <th className="border border-gray-300 px-4 py-2">Código</th>
             <th className="border border-gray-300 px-4 py-2">Solicitante</th>
-            <th className="border border-gray-300 px-4 py-2">Documento</th>
             <th className="border border-gray-300 px-4 py-2">Estado</th>
             <th className="border border-gray-300 px-4 py-2">Monto</th>
             <th className="border border-gray-300 px-4 py-2">Ver Detalle</th>
           </tr>
         </thead>
         <tbody>
-          {Alltramites.map((tramite) => (
+          {tramitesOtros.map((tramite) => (
             <tr key={tramite.id} className="bg-white hover:bg-gray-50">
               <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.nombreSolicitante}</td>
-              <td className="border border-gray-300 px-4 py-2">{tramite.nombreDocumento}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
               <td className="border border-gray-300 px-4 py-2 text-center">
@@ -163,10 +193,76 @@ export default function Fundesurg() {
       <td className="border border-gray-300 px-4 py-2 text-blue-600">
         {tramitesOtros.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
       </td>
-      <td className="border border-gray-300 px-4 py-2"></td>
     </tr>
   </tfoot>
       </table>
+        
+      {/* LISTA DE TRAMITES DEVUELTOS */}
+      <h2 className="text-2xl font-bold my-6">Lista de Trámites Devueltos</h2>
+
+<table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200 mb-8">
+  <thead className="text-xs text-gray-700 uppercase bg-gray-100">
+    <tr>
+      <th className="border border-gray-300 px-4 py-2">Código</th>
+      <th className="border border-gray-300 px-4 py-2">Solicitante</th>
+      <th className="border border-gray-300 px-4 py-2">Transferencia</th>
+      <th className="border border-gray-300 px-4 py-2">Estado</th>
+      <th className="border border-gray-300 px-4 py-2">Monto</th>
+      <th className="border border-gray-300 px-4 py-2">Ver Detalle</th>
+      {/* <th className="border border-gray-300 px-4 py-2">Acciones</th>
+      <th className="border border-gray-300 px-4 py-2">Devolucion</th> */}
+    </tr>
+  </thead>
+  <tbody>
+    {tramitesDevueltos.map((tramite) => (
+      <tr key={tramite.id} className="bg-white hover:bg-gray-50">
+        <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
+        <td className="border border-gray-300 px-4 py-2">{tramite.nombreSolicitante}</td>
+        <td className="border border-gray-300 px-4 py-2">{tramite.numeroTransferencia}</td>
+        <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
+        <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
+        <td className="border border-gray-300 px-4 py-2 text-center">
+          <button
+            onClick={() => setSelectedTramite(tramite)}
+            className="text-blue-500 hover:text-blue-700"
+          >
+            <FiEye size={18} />
+          </button>
+        </td>
+        {/* <td className="border border-gray-300 px-4 py-2">
+          <button
+            onClick={() => procesarTramite(tramite.id)}
+            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+            disabled={loadingButtons[tramite.id]}
+          >
+            {loadingButtons[tramite.id] ? "Procesando..." : "Procesar"}
+          </button>
+        </td> */}
+        {/* DEVOLVER */}
+        {/* <td className="border border-gray-300 px-4 py-2"> 
+          <button
+            onClick={() => devolverTramite(tramite.id)}
+            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+            disabled={loadingButtons[tramite.id]}
+          >
+            {loadingButtons[tramite.id] ? "Procesando..." : "Devolver"}
+          </button>
+        </td> */}
+      </tr>
+    ))}
+  </tbody>
+  <tfoot>
+  <tr className="bg-gray-200 font-bold">
+    <td className="border border-gray-300 px-4 py-2" colSpan={4}>
+      Total Monto por Procesado:
+    </td>
+    <td className="border border-gray-300 px-4 py-2 text-blue-600">
+      {tramitesDevueltos.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
+    </td>
+    <td className="border border-gray-300 px-4 py-2"></td>
+  </tr>
+</tfoot>
+</table>
 
      {/* MODAL DE DETALLE */}
 {selectedTramite && (
