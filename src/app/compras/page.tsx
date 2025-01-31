@@ -5,6 +5,7 @@ import { FiTrash2, FiCreditCard, FiX } from "react-icons/fi";
 import { useGlobalState } from "@/context/GlobalStateContext";
 import axios from "axios";
 import jsPDF from "jspdf";
+import Image from "next/image";
 
 export default function Compras() {
   const { cart, removeFromCart, clearCart } = useGlobalState();
@@ -111,7 +112,7 @@ export default function Compras() {
       };
 
       // Enviar datos al backend
-      const response = await axios.post("/api/test", tramiteData);
+      const response = await axios.post("/api/tramites", tramiteData);
 
       if (response.status === 201) {
         const { codigo } = response.data;
@@ -183,55 +184,94 @@ export default function Compras() {
               <p className="text-lg font-bold">Monto Total a Pagar: {montoTotal} BS</p>
             </div>
 
-      {/* Modal de Pago */}
-      {isPaymentModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg relative max-w-md w-full">
-            <button onClick={togglePaymentModal} className="absolute top-3 right-3 text-gray-500 hover:text-gray-700">
-              <FiX size={24} />
-            </button>
-            <h2 className="text-xl font-bold mb-4 text-center">Realizar Pago</h2>
-            <form onSubmit={handlePaymentSubmit} className="space-y-4">
-              <input
-                type="text"
-                name="nombreSolicitante"
-                value={paymentData.nombreSolicitante}
-                onChange={handlePaymentChange}
-                placeholder="Nombre del Solicitante"
-                className="w-full p-2 border rounded"
-                required
-              />
-              <input
-                type="text"
-                name="numeroTransferencia"
-                value={paymentData.numeroTransferencia}
-                onChange={handlePaymentChange}
-                placeholder="Número de Transferencia"
-                className="w-full p-2 border rounded"
-                required
-              />
-              {/* Selector de Banco */}
-              <select
-                name="banco"
-                value={paymentData.banco}
-                onChange={handlePaymentChange}
-                className="w-full p-2 border rounded"
-                required
-              >
-                <option value="">Seleccione un banco</option>
-                {bancosVenezuela.map((banco, index) => (
-                  <option key={index} value={banco}>
-                    {banco}
-                  </option>
-                ))}
-              </select>
-              <button type="submit" className="bg-blue-500 text-white py-2 px-4 rounded-lg w-full">
-                {loading ? "Procesando..." : "Confirmar Pago"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+     {/* Modal de Pago */}
+{isPaymentModalOpen && (
+  <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg relative max-w-lg w-full">
+      <button 
+        onClick={togglePaymentModal} 
+        className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+      >
+        <FiX size={24} />
+      </button>
+
+      {/* Encabezado */}
+      <h2 className="text-gray-700 text-2xl text-center font-bold mb-4">Datos para realizar pago</h2>
+      <Image className="mb-4" src="/img/logo_banco.svg" alt="Logo del Banco" width={100} height={50} />
+      {/* Tabla con Datos Bancarios */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm text-gray-700 border-collapse border border-gray-200 rounded-lg shadow">
+          <tbody>
+            <tr className="bg-gray-100">
+              <td className="border border-gray-300 px-4 py-2 font-semibold">Banco</td>
+              <td className="border border-gray-300 px-4 py-2">Banco de Venezuela</td>
+            </tr>
+            <tr>
+              <td className="border border-gray-300 px-4 py-2 font-semibold">RIF:</td>
+              <td className="border border-gray-300 px-4 py-2">J-34252</td>
+            </tr>
+            <tr className="bg-gray-100">
+              <td className="border border-gray-300 px-4 py-2 font-semibold">Número de Cuenta:</td>
+              <td className="border border-gray-300 px-4 py-2">0102-29494-24-4439</td>
+            </tr>
+            <tr>
+              <td className="border border-gray-300 px-4 py-2 font-semibold">A Nombre de:</td>
+              <td className="border border-gray-300 px-4 py-2">UNIVERSIDAD ROMULO GALLEGOS</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Formulario de Pago */}
+      <h2 className="text-xl text-gray-600 font-bold mt-6 mb-4 text-center">Realizar Pago</h2>
+      <form onSubmit={handlePaymentSubmit} className="space-y-4">
+        <input
+          type="text"
+          name="nombreSolicitante"
+          value={paymentData.nombreSolicitante}
+          onChange={handlePaymentChange}
+          placeholder="Nombre del Solicitante"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring focus:ring-blue-200"
+          required
+        />
+        <input
+          type="text"
+          name="numeroTransferencia"
+          value={paymentData.numeroTransferencia}
+          onChange={handlePaymentChange}
+          placeholder="Número de Transferencia"
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring focus:ring-blue-200"
+          required
+        />
+
+        {/* Selector de Banco */}
+        <select
+          name="banco"
+          value={paymentData.banco}
+          onChange={handlePaymentChange}
+          className="w-full p-3 border border-gray-300 rounded-lg focus:ring focus:ring-blue-200"
+          required
+        >
+          <option value="">Seleccione un banco</option>
+          {bancosVenezuela.map((banco, index) => (
+            <option key={index} value={banco}>
+              {banco}
+            </option>
+          ))}
+        </select>
+
+        {/* Botón de Confirmación */}
+        <button 
+          type="submit" 
+          className="bg-blue-500 text-white py-3 px-4 rounded-lg w-full font-semibold hover:bg-blue-600 transition"
+        >
+          {loading ? "Procesando..." : "Confirmar Pago"}
+        </button>
+      </form>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }

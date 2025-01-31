@@ -6,6 +6,16 @@ import { FiEye, FiX } from "react-icons/fi";
 import Modal from "react-modal";
 
 // Interfaz para Tramite
+interface Documento {
+  id: number;
+  nombre: string;
+  tipoDocumento: string;
+  tipoPapel: string;
+  carrera: string;
+  cantidad: number;
+  precio: number;
+}
+
 interface Tramite {
   id: number;
   codigo: string;
@@ -14,7 +24,9 @@ interface Tramite {
   status: string;
   monto: number;
   statusHistory: { status: string; fecha: string }[] | string;
+  documentos: Documento[]; // Nuevo campo para almacenar documentos relacionados
 }
+
 
 export default function ListaTramitesPendientes() {
   const [tramites, setTramites] = useState<Tramite[]>([]);
@@ -42,7 +54,9 @@ export default function ListaTramitesPendientes() {
             ? JSON.parse(tramite.statusHistory)
             : tramite.statusHistory,
       }));
-      setTramites(parsedTramites);
+      console.log(parsedTramites)
+      const tramitesCoordinacion = parsedTramites.filter((t: Tramite) => t.status !== "PENDIENTE");
+      setTramites(tramitesCoordinacion);
     } catch (error) {
       console.error("Error al obtener trámites:", error);
     }
@@ -142,7 +156,7 @@ export default function ListaTramitesPendientes() {
               </tr>
               <tr className="bg-gray-100">
                 <td className="border border-gray-300 px-4 py-2 font-semibold">Monto</td>
-                <td className="border border-gray-300 px-4 py-2">${selectedTramite.monto.toFixed(2)}</td>
+                <td className="border border-gray-300 px-4 py-2">{selectedTramite.monto.toFixed(2)} BS</td>
               </tr>
               <tr>
                 <td className="border border-gray-300 px-4 py-2 font-semibold">Historial de Estado</td>
@@ -157,6 +171,25 @@ export default function ListaTramitesPendientes() {
                   </ul>
                 </td>
               </tr>
+              {/* documentos */}
+              <tr className="bg-gray-100">
+  <td className="border border-gray-300 px-4 py-2 font-semibold">Documentos Solicitados</td>
+  <td className="border border-gray-300 px-4 py-2">
+    <ul className="list-disc list-inside space-y-1">
+      {selectedTramite.documentos && selectedTramite.documentos.length > 0 ? (
+        selectedTramite.documentos.map((doc, index) => (
+          <li key={index} className="text-gray-700">
+            <span className="font-semibold">{doc.nombre}</span> - {doc.tipoDocumento} - {doc.tipoPapel} - {doc.carrera} - {doc.cantidad} unidad(es)
+          </li>
+        ))
+      ) : (
+        <span className="text-gray-500">No hay documentos asociados</span>
+      )}
+    </ul>
+  </td>
+</tr>
+
+              {/* documentos termina */}
             </tbody>
           </table>
 
