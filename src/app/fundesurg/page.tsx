@@ -187,12 +187,13 @@ const devolverTramite = async (id: number) => {
                 {/* Pie de tabla con total de montos */}
   <tfoot>
     <tr className="bg-gray-200 font-bold">
-      <td className="border border-gray-300 px-4 py-2" colSpan={4}>
+      <td className="border border-gray-300 px-4 py-2" colSpan={3}>
         Total Monto Procesado:
       </td>
       <td className="border border-gray-300 px-4 py-2 text-blue-600">
         {tramitesOtros.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
       </td>
+      <td className="border border-gray-300 px-4 py-2 text-blue-600"></td>
     </tr>
   </tfoot>
       </table>
