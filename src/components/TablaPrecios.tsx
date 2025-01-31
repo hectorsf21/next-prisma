@@ -27,7 +27,7 @@ export default function TablaPrecios() {
                 <td className="border border-gray-300 px-4 py-2">{doc.nombre}</td>
                 <td className="border border-gray-300 px-4 py-2">{doc.tipoDocumento}</td>
                 <td className="border border-gray-300 px-4 py-2">{doc.tipoPapel}</td>
-                <td className="border border-gray-300 px-4 py-2">${doc.precio.toFixed(2)}</td>
+                <td className="border border-gray-300 px-4 py-2">{doc.precio.toFixed(2)} BS</td>
                 <td className="border border-gray-300 px-4 py-2 text-center">
                   <button
                     onClick={() => {

@@ -39,7 +39,7 @@ export default function TramitesComponent() {
     setLoading(true);
 
     try {
-      const response = await axios.post("/api/tramites", {
+      const response = await axios.post("/api/test", {
         nombreSolicitante: formData.nombreSolicitante,
         numeroTransferencia: formData.numeroTransferencia,
         monto: formData.monto,

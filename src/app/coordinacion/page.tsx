@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FiEye } from "react-icons/fi";
+import { FiEye, FiX } from "react-icons/fi";
 import Modal from "react-modal";
 
 // Interfaz para Tramite
@@ -13,12 +13,13 @@ interface Tramite {
   nombreDocumento: string;
   status: string;
   monto: number;
+  statusHistory: { status: string; fecha: string }[] | string;
 }
 
 export default function ListaTramitesPendientes() {
   const [tramites, setTramites] = useState<Tramite[]>([]);
   const [selectedTramite, setSelectedTramite] = useState<Tramite | null>(null);
-  const [loadingId, setLoadingId] = useState<number | null>(null); // Cambia el ID específico que está en proceso
+  const [loadingId, setLoadingId] = useState<number | null>(null);
 
   // Mapeo de estados
   const statusFlow: { [key: string]: string } = {
@@ -34,7 +35,14 @@ export default function ListaTramitesPendientes() {
   const fetchTramites = async () => {
     try {
       const res = await axios.get("/api/tramites");
-      setTramites(res.data);
+      const parsedTramites = res.data.map((tramite: Tramite) => ({
+        ...tramite,
+        statusHistory:
+          typeof tramite.statusHistory === "string"
+            ? JSON.parse(tramite.statusHistory)
+            : tramite.statusHistory,
+      }));
+      setTramites(parsedTramites);
     } catch (error) {
       console.error("Error al obtener trámites:", error);
     }
@@ -42,18 +50,18 @@ export default function ListaTramitesPendientes() {
 
   // Cambiar estado dinámicamente
   const changeStatus = async (id: number, currentStatus: string) => {
-    const nextStatus = statusFlow[currentStatus]; // Determina el próximo estado
+    const nextStatus = statusFlow[currentStatus];
     if (!nextStatus) return;
 
-    setLoadingId(id); // Establece el ID del trámite que está en proceso
-    await axios.put("/api/status", { id, nuevoStatus: nextStatus }); // Envía el estado actualizado al backend
-    await fetchTramites(); // Actualiza la lista de trámites
-    setLoadingId(null); // Restablece el estado de carga al terminar
+    setLoadingId(id);
+    await axios.put("/api/status", { id, nuevoStatus: nextStatus });
+    await fetchTramites();
+    setLoadingId(null);
   };
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Lista de Trámites Pendientes</h2>
+      <h2 className="text-2xl font-bold mb-6">Lista de Trámites</h2>
 
       <table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200">
         <thead className="text-xs text-gray-700 uppercase bg-gray-100">
@@ -86,7 +94,7 @@ export default function ListaTramitesPendientes() {
                   <button
                     onClick={() => changeStatus(tramite.id, tramite.status)}
                     className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                    disabled={loadingId === tramite.id} // Solo desactiva el botón correspondiente
+                    disabled={loadingId === tramite.id}
                   >
                     {loadingId === tramite.id ? "Procesando..." : "Procesar"}
                   </button>
@@ -97,22 +105,64 @@ export default function ListaTramitesPendientes() {
         </tbody>
       </table>
 
-      {/* Modal */}
+      {/* MODAL DE DETALLE */}
       {selectedTramite && (
         <Modal
           isOpen={!!selectedTramite}
           onRequestClose={() => setSelectedTramite(null)}
-          className="bg-white p-6 rounded shadow-lg max-w-lg mx-auto mt-20"
+          className="bg-white p-6 rounded-lg shadow-lg max-w-lg mx-auto mt-20 relative"
           overlayClassName="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center"
         >
-          <h2 className="text-xl font-bold mb-4">Detalles del Trámite</h2>
-          <p><strong>Código:</strong> {selectedTramite.codigo}</p>
-          <p><strong>Solicitante:</strong> {selectedTramite.nombreSolicitante}</p>
-          <p><strong>Documento:</strong> {selectedTramite.nombreDocumento}</p>
-          <p><strong>Estado:</strong> {selectedTramite.status}</p>
           <button
             onClick={() => setSelectedTramite(null)}
-            className="bg-red-500 text-white px-4 py-2 rounded mt-4 hover:bg-red-600"
+            className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+          >
+            <FiX size={24} />
+          </button>
+
+          <h2 className="text-xl font-bold mb-4">Detalles del Trámite</h2>
+
+          <table className="w-full text-sm text-left text-gray-600 border border-gray-300">
+            <tbody>
+              <tr className="bg-gray-100">
+                <td className="border border-gray-300 px-4 py-2 font-semibold">Código</td>
+                <td className="border border-gray-300 px-4 py-2">{selectedTramite.codigo}</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-4 py-2 font-semibold">Solicitante</td>
+                <td className="border border-gray-300 px-4 py-2">{selectedTramite.nombreSolicitante}</td>
+              </tr>
+              <tr className="bg-gray-100">
+                <td className="border border-gray-300 px-4 py-2 font-semibold">Documento</td>
+                <td className="border border-gray-300 px-4 py-2">{selectedTramite.nombreDocumento}</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-4 py-2 font-semibold">Estado</td>
+                <td className="border border-gray-300 px-4 py-2">{selectedTramite.status}</td>
+              </tr>
+              <tr className="bg-gray-100">
+                <td className="border border-gray-300 px-4 py-2 font-semibold">Monto</td>
+                <td className="border border-gray-300 px-4 py-2">${selectedTramite.monto.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td className="border border-gray-300 px-4 py-2 font-semibold">Historial de Estado</td>
+                <td className="border border-gray-300 px-4 py-2">
+                  <ul className="list-disc list-inside space-y-1">
+                    {Array.isArray(selectedTramite.statusHistory) &&
+                      selectedTramite.statusHistory.map((hist, index) => (
+                        <li key={index} className="text-gray-700">
+                          <span className="font-semibold">{hist.status}</span> - {new Date(hist.fecha).toLocaleString('es-VE')}
+                        </li>
+                      ))}
+                  </ul>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <button
+            onClick={() => setSelectedTramite(null)}
+            className="bg-red-500 text-white px-4 py-2 rounded mt-4 hover:bg-red-600 w-full"
           >
             Cerrar
           </button>

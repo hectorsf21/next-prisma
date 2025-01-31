@@ -21,32 +21,11 @@ export default function Page() {
             {/* Logo o Título */}
             <div className="flex-shrink-0">
               <h1 className="text-2xl font-bold text-gray-800">
-                <span className="text-blue-500">SOLI</span>CITUDES
+                <span className="text-blue-800">SOLI</span>CITUDES
               </h1>
             </div>
 
             {/* Menú de Navegación */}
-            <div className="hidden md:flex space-x-8">
-              <Link
-                href="coordinacion"
-                className="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                COORDINACION
-              </Link>
-
-              <Link
-                href="fundesurg"
-                className="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                FUNDESUR
-              </Link>
-              <Link
-                href="superusuario"
-                className="text-gray-600 hover:text-blue-500 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                SUPERUSUARIO
-              </Link>
-            </div>
 
             {/* Ícono del carrito */}
             <Link href={"/compras"}>
