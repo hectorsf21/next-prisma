@@ -1,57 +1,76 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { FiEye, FiX } from "react-icons/fi";
 import Modal from "react-modal";
+import { useGlobalState, Tramite } from "@/context/GlobalStateContext";
 
-// Interfaz para Tramite
-interface Tramite {
-  id: number;
-  codigo: string;
-  nombreSolicitante: string;
-  numeroTransferencia: string;
-  nombreDocumento: string;
-  status: string;
-  monto: number;
-  statusHistory: { status: string; fecha: string }[] | string;
-}
 
 export default function Fundesurg() {
+  const { tramites, fetchTramites } = useGlobalState(); // Estado global
   const [tramitesRevision, setTramitesRevision] = useState<Tramite[]>([]);
   const [tramitesDevueltos, setTramitesDevueltos] = useState<Tramite[]>([]);
-  const [Alltramites, setAllTramites] = useState<Tramite[]>([]);
   const [tramitesOtros, setTramitesOtros] = useState<Tramite[]>([]);
   const [loadingButtons, setLoadingButtons] = useState<{ [key: number]: boolean }>({});
   const [selectedTramite, setSelectedTramite] = useState<Tramite | null>(null);
+  const [fechaDesde, setFechaDesde] = useState<string>("");
+  const [fechaHasta, setFechaHasta] = useState<string>("");
 
-  // Obtener trámites desde el backend
+  // Actualizar las listas de trámites cuando cambie el estado global
   useEffect(() => {
-    fetchTramites();
-  }, []);
-
-  const fetchTramites = async () => {
-    try {
-      const res = await axios.get("/api/tramites");
-      const parsedTramites = res.data.map((tramite: Tramite) => ({
-        ...tramite,
-        statusHistory:
-          typeof tramite.statusHistory === "string"
-            ? JSON.parse(tramite.statusHistory)
-            : tramite.statusHistory,
-      }));
-      console.log(parsedTramites)
-      setAllTramites(parsedTramites);
-      setTramitesDevueltos(parsedTramites.filter((t: Tramite) => t.status === "DEVUELTO"));
-      setTramitesRevision(parsedTramites.filter((t: Tramite) => t.status === "PENDIENTE"));
-      setTramitesOtros(parsedTramites.filter((t: Tramite) => !["PENDIENTE", "DEVUELTO"].includes(t.status)));
-
-    } catch (error) {
-      console.error("Error al obtener trámites:", error);
+    if (tramites.length > 0) {
+      setTramitesRevision(tramites.filter((t: Tramite) => t.status === "PENDIENTE"));
+      setTramitesDevueltos(tramites.filter((t: Tramite) => t.status === "DEVUELTO"));
+      setTramitesOtros(tramites.filter((t: Tramite) => !["PENDIENTE", "DEVUELTO"].includes(t.status)));
     }
+  }, [tramites]); // Dependencia: tramites
+
+  // FUNCION PARA FILTRAR TRAMITES
+  const filtrarTramites = () => {
+    let tramitesFiltrados = tramites; // Usar el estado global "tramites"
+
+    if (fechaDesde) {
+      // Convertir "desde" a UTC (inicio del día)
+      const desde = new Date(fechaDesde + "T00:00:00Z");
+
+      // Si "hasta" está vacío, filtrar solo por el día de "desde"
+      if (!fechaHasta) {
+        const siguienteDia = new Date(desde);
+        siguienteDia.setDate(desde.getDate() + 1); // Día siguiente en UTC
+
+        tramitesFiltrados = tramites.filter((tramite) => {
+          const fechaCreacionLocal = new Date(tramite.createdAt); // Convertir a local
+          return fechaCreacionLocal >= desde && fechaCreacionLocal < siguienteDia;
+        });
+      } else {
+        // Si "hasta" tiene un valor, aplicar el filtro de rango
+        const hasta = new Date(fechaHasta + "T23:59:59.999Z"); // Fin del día en UTC
+
+        tramitesFiltrados = tramites.filter((tramite) => {
+          const fechaCreacionLocal = new Date(tramite.createdAt); // Convertir a local
+          return fechaCreacionLocal >= desde && fechaCreacionLocal <= hasta;
+        });
+      }
+    }
+
+    // Actualizar las listas de trámites filtrados
+    setTramitesDevueltos(tramitesFiltrados.filter((t: Tramite) => t.status === "DEVUELTO"));
+    setTramitesRevision(tramitesFiltrados.filter((t: Tramite) => t.status === "PENDIENTE"));
+    setTramitesOtros(tramitesFiltrados.filter((t: Tramite) => !["PENDIENTE", "DEVUELTO"].includes(t.status)));
   };
 
-  // FUNCION PROCESAR STATUS
+  // Manejar el cambio de fecha
+  const handleFechaChange = () => {
+    filtrarTramites(); // Llamar a la función de filtrado sin parámetros
+  };
+
+  // Resto del código (procesarTramite, devolverTramite, etc.)
+  // ...
+
+
+
+   // FUNCION PROCESAR STATUS
 
   // Manejar el procesamiento del trámite
   const procesarTramite = async (id: number) => {
@@ -66,33 +85,62 @@ export default function Fundesurg() {
       setLoadingButtons((prev) => ({ ...prev, [id]: false }));
     }
   };
-  
+
   // FUNCION DEVOLVER TRAMITE
   // Nueva función para cambiar el estado a "DEVUELTO"
-const devolverTramite = async (id: number) => {
-  setLoadingButtons((prev) => ({ ...prev, [id]: true }));
-
-  try {
-    await axios.put("/api/status", { id, nuevoStatus: "DEVUELTO" });
-    await fetchTramites(); // Actualiza la lista después de la devolución
-  } catch (error) {
-    console.error("Error al devolver el trámite:", error);
-  } finally {
-    setLoadingButtons((prev) => ({ ...prev, [id]: false }));
-  }
-};
+  const devolverTramite = async (id: number) => {
+    setLoadingButtons((prev) => ({ ...prev, [id]: true }));
+  
+    try {
+      await axios.put("/api/status", { id, nuevoStatus: "DEVUELTO" });
+      await fetchTramites(); // Actualiza la lista después de la devolución
+    } catch (error) {
+      console.error("Error al devolver el trámite:", error);
+    } finally {
+      setLoadingButtons((prev) => ({ ...prev, [id]: false }));
+    }
+  };
 
 
   return (
     <div className="p-6">
-      <h2 className="text-2xl font-bold mb-6">Lista de Trámites Pendientes</h2>
+     
 
-      {/* Tabla de Trámites Pendientes */}
+      {/* Filtros de fecha */}
+      <div className="mb-6 flex gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Desde:</label>
+          <input
+            type="date"
+            value={fechaDesde}
+            onChange={(e) => setFechaDesde(e.target.value)}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Hasta:</label>
+          <input
+            type="date"
+            value={fechaHasta}
+            onChange={(e) => setFechaHasta(e.target.value)}
+            className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+          />
+        </div>
+        <button
+          onClick={handleFechaChange}
+          className="mt-6 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600"
+        >
+          Filtrar
+        </button>
+      </div>
+      <h2 className="text-2xl font-bold mb-6">Lista de Trámites Pendientes</h2>
+      {/* Resto del código de las tablas y modal */}
+{/* Tabla de Trámites Pendientes */}
       <table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200 mb-8">
         <thead className="text-xs text-gray-700 uppercase bg-gray-100">
           <tr>
             <th className="border border-gray-300 px-4 py-2">Código</th>
-            <th className="border border-gray-300 px-4 py-2">Solicitante</th>
+            <th className="border border-gray-300 px-4 py-2">Fecha</th>
             <th className="border border-gray-300 px-4 py-2">Transferencia</th>
             <th className="border border-gray-300 px-4 py-2">Estado</th>
             <th className="border border-gray-300 px-4 py-2">Monto</th>
@@ -105,7 +153,8 @@ const devolverTramite = async (id: number) => {
           {tramitesRevision.map((tramite) => (
             <tr key={tramite.id} className="bg-white hover:bg-gray-50">
               <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
-              <td className="border border-gray-300 px-4 py-2">{tramite.nombreSolicitante}</td>
+              <td className="border border-gray-300 px-4 py-2">{new Date(tramite.createdAt).toLocaleDateString('es-VE')}</td>
+              {/* <td className="border border-gray-300 px-4 py-2">{tramite.createdAt}</td> */}
               <td className="border border-gray-300 px-4 py-2">{tramite.numeroTransferencia}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
@@ -160,7 +209,7 @@ const devolverTramite = async (id: number) => {
         <thead className="text-xs text-gray-700 uppercase bg-gray-100">
           <tr>
             <th className="border border-gray-300 px-4 py-2">Código</th>
-            <th className="border border-gray-300 px-4 py-2">Solicitante</th>
+            <th className="border border-gray-300 px-4 py-2">Fecha</th>
             <th className="border border-gray-300 px-4 py-2">Estado</th>
             <th className="border border-gray-300 px-4 py-2">Monto</th>
             <th className="border border-gray-300 px-4 py-2">Ver Detalle</th>
@@ -170,7 +219,7 @@ const devolverTramite = async (id: number) => {
           {tramitesOtros.map((tramite) => (
             <tr key={tramite.id} className="bg-white hover:bg-gray-50">
               <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
-              <td className="border border-gray-300 px-4 py-2">{tramite.nombreSolicitante}</td>
+              <td className="border border-gray-300 px-4 py-2">{new Date(tramite.createdAt).toLocaleDateString('es-VE')}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
               <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
               <td className="border border-gray-300 px-4 py-2 text-center">
@@ -205,7 +254,7 @@ const devolverTramite = async (id: number) => {
   <thead className="text-xs text-gray-700 uppercase bg-gray-100">
     <tr>
       <th className="border border-gray-300 px-4 py-2">Código</th>
-      <th className="border border-gray-300 px-4 py-2">Solicitante</th>
+      <th className="border border-gray-300 px-4 py-2">Fecha</th>
       <th className="border border-gray-300 px-4 py-2">Transferencia</th>
       <th className="border border-gray-300 px-4 py-2">Estado</th>
       <th className="border border-gray-300 px-4 py-2">Monto</th>
@@ -218,7 +267,7 @@ const devolverTramite = async (id: number) => {
     {tramitesDevueltos.map((tramite) => (
       <tr key={tramite.id} className="bg-white hover:bg-gray-50">
         <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
-        <td className="border border-gray-300 px-4 py-2">{tramite.nombreSolicitante}</td>
+        <td className="border border-gray-300 px-4 py-2">{new Date(tramite.createdAt).toLocaleDateString('es-VE')}</td>
         <td className="border border-gray-300 px-4 py-2">{tramite.numeroTransferencia}</td>
         <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
         <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
@@ -230,25 +279,6 @@ const devolverTramite = async (id: number) => {
             <FiEye size={18} />
           </button>
         </td>
-        {/* <td className="border border-gray-300 px-4 py-2">
-          <button
-            onClick={() => procesarTramite(tramite.id)}
-            className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-            disabled={loadingButtons[tramite.id]}
-          >
-            {loadingButtons[tramite.id] ? "Procesando..." : "Procesar"}
-          </button>
-        </td> */}
-        {/* DEVOLVER */}
-        {/* <td className="border border-gray-300 px-4 py-2"> 
-          <button
-            onClick={() => devolverTramite(tramite.id)}
-            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-            disabled={loadingButtons[tramite.id]}
-          >
-            {loadingButtons[tramite.id] ? "Procesando..." : "Devolver"}
-          </button>
-        </td> */}
       </tr>
     ))}
   </tbody>
@@ -296,10 +326,6 @@ const devolverTramite = async (id: number) => {
             <td className="border border-gray-300 px-4 py-2 font-semibold">Solicitante</td>
             <td className="border border-gray-300 px-4 py-2">{selectedTramite.nombreSolicitante}</td>
           </tr>
-          <tr className="bg-gray-100">
-            <td className="border border-gray-300 px-4 py-2 font-semibold">Documento</td>
-            <td className="border border-gray-300 px-4 py-2">{selectedTramite.nombreDocumento}</td>
-          </tr>
           <tr>
             <td className="border border-gray-300 px-4 py-2 font-semibold">Estado</td>
             <td className="border border-gray-300 px-4 py-2">{selectedTramite.status}</td>
@@ -337,6 +363,7 @@ const devolverTramite = async (id: number) => {
     </button>
   </Modal>
 )}
+      {/* ... */}
     </div>
   );
 }

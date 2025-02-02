@@ -21,7 +21,7 @@ interface CartItem {
   precio: number;
 }
 
-interface Tramite {
+export interface Tramite {
   id: number;
   codigo: string;
   nombreSolicitante: string;
@@ -98,15 +98,26 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Función para obtener los trámites desde la API
-  const fetchTramites = async () => {
-    try {
-      const response = await axios.get("/api/tramites");
-      setTramites(response.data);
-    } catch (error) {
-      console.error("Error al obtener los trámites:", error);
-    }
-  };
+// FUNCION PARA OBETENER LOS TRAMITES VERSION NUEVA
+const fetchTramites = async () => {
+  try {
+    const response = await axios.get("/api/tramites");
+    const parsedTramites = response.data.map((tramite: Tramite) => ({
+      ...tramite,
+      statusHistory:
+        typeof tramite.statusHistory === "string"
+          ? JSON.parse(tramite.statusHistory)
+          : tramite.statusHistory,
+    }));
+
+    console.log(parsedTramites); // Para depuración
+    setTramites(parsedTramites);
+  } catch (error) {
+    console.error("Error al obtener los trámites:", error);
+  }
+};
+
+
 
   // Función para obtener los usuarios desde la API
   const fetchUsers = async () => {

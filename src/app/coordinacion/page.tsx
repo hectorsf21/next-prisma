@@ -106,20 +106,6 @@ export default function ListaTramitesPendientes() {
             className="p-2 border border-gray-300 rounded-md"
           />
         </div>
-
-        {/* <div className="flex flex-col">
-          <label htmlFor="filterTipoPapel" className="text-gray-700 font-medium">Filtrar por Tipo de Papel:</label>
-          <select
-            id="filterTipoPapel"
-            value={filterTipoPapel}
-            onChange={(e) => setFilterTipoPapel(e.target.value)}
-            className="p-2 border border-gray-300 rounded-md"
-          >
-            <option value="">Selecciona Tipo de Papel</option>
-            <option value="seguridad">Seguridad</option>
-            <option value="simple">Simple</option>
-          </select>
-        </div> */}
       </div>
 
       <table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200">
