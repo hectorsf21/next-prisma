@@ -31,6 +31,8 @@ export interface Tramite {
   statusHistory: { status: string; fecha: string }[];
   createdAt: string;
   updatedAt: string;
+  page: number;
+  pagesize: number;
   documentos: Documento[];
 }
 
@@ -98,10 +100,10 @@ export const GlobalStateProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-// FUNCION PARA OBETENER LOS TRAMITES VERSION NUEVA
+// FUNCION PARA OBETENER LOS TRAMITES VERSION VIEJA
 const fetchTramites = async () => {
   try {
-    const response = await axios.get("/api/tramites");
+    const response = await axios.get("/api/test");
     const parsedTramites = response.data.map((tramite: Tramite) => ({
       ...tramite,
       statusHistory:
@@ -110,12 +112,34 @@ const fetchTramites = async () => {
           : tramite.statusHistory,
     }));
 
-    console.log(parsedTramites); // Para depuración
+    // console.log(parsedTramites); // Para depuración
     setTramites(parsedTramites);
   } catch (error) {
     console.error("Error al obtener los trámites:", error);
   }
 };
+
+// // FUNCION PARA OBETENER LOS TRAMITES VERSION NUEVA
+// const fetchTramites = async (page: number = 1, pageSize: number = 10) => {
+//   try {
+//     const response = await axios.get("/api/test", {
+//       params: { page, pageSize },
+//     });
+
+//     const parsedTramites = response.data.tramites.map((tramite: Tramite) => ({
+//       ...tramite,
+//       statusHistory:
+//         typeof tramite.statusHistory === "string"
+//           ? JSON.parse(tramite.statusHistory)
+//           : tramite.statusHistory,
+//     }));
+
+//     console.log(parsedTramites); // Para depuración
+//     setTramites(parsedTramites);
+//   } catch (error) {
+//     console.error("Error al obtener los trámites:", error);
+//   }
+// };
 
 
 

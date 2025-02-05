@@ -16,6 +16,7 @@ export default function Fundesurg() {
   const [selectedTramite, setSelectedTramite] = useState<Tramite | null>(null);
   const [fechaDesde, setFechaDesde] = useState<string>("");
   const [fechaHasta, setFechaHasta] = useState<string>("");
+  const [selectedOption, setSelectedOption] = useState<string>('PENDIENTES');
 
   // Actualizar las listas de trámites cuando cambie el estado global
   useEffect(() => {
@@ -23,6 +24,9 @@ export default function Fundesurg() {
       setTramitesRevision(tramites.filter((t: Tramite) => t.status === "PENDIENTE"));
       setTramitesDevueltos(tramites.filter((t: Tramite) => t.status === "DEVUELTO"));
       setTramitesOtros(tramites.filter((t: Tramite) => !["PENDIENTE", "DEVUELTO"].includes(t.status)));
+      console.log('TRAMITES DEVUELTOS: ', tramitesDevueltos)
+      console.log('TRAMITES PENDIENTES: ', tramitesRevision)
+      console.log('TRAMITES PROCESADOS: ', tramitesOtros)
     }
   }, [tramites]); // Dependencia: tramites
 
@@ -65,11 +69,6 @@ export default function Fundesurg() {
     filtrarTramites(); // Llamar a la función de filtrado sin parámetros
   };
 
-  // Resto del código (procesarTramite, devolverTramite, etc.)
-  // ...
-
-
-
    // FUNCION PROCESAR STATUS
 
   // Manejar el procesamiento del trámite
@@ -98,6 +97,184 @@ export default function Fundesurg() {
       console.error("Error al devolver el trámite:", error);
     } finally {
       setLoadingButtons((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
+  // FUNCION SELECTOR 
+  const handleChangeStatusTabla = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedOption(e.target.value);
+  };
+
+  // RENDERIZAR LA TABLA CORRESPONDIENTE
+   // Renderizar la tabla correspondiente según la opción seleccionada
+   const renderTable = () => {
+    switch (selectedOption) {
+      case "PENDIENTES":
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Lista de Trámites Pendientes</h2>
+            <table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200 mb-8">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-100">
+                <tr>
+                  <th className="border border-gray-300 px-4 py-2">Código</th>
+                  <th className="border border-gray-300 px-4 py-2">Fecha</th>
+                  <th className="border border-gray-300 px-4 py-2">Transferencia</th>
+                  <th className="border border-gray-300 px-4 py-2">Estado</th>
+                  <th className="border border-gray-300 px-4 py-2">Monto</th>
+                  <th className="border border-gray-300 px-4 py-2">Ver Detalle</th>
+                  <th className="border border-gray-300 px-4 py-2">Acciones</th>
+                  <th className="border border-gray-300 px-4 py-2">Devolución</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tramitesRevision.map((tramite) => (
+                  <tr key={tramite.id} className="bg-white hover:bg-gray-50">
+                    <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
+                    <td className="border border-gray-300 px-4 py-2">{new Date(tramite.createdAt).toLocaleDateString('es-VE')}</td>
+                    <td className="border border-gray-300 px-4 py-2">{tramite.numeroTransferencia}</td>
+                    <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
+                    <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      <button
+                        onClick={() => setSelectedTramite(tramite)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <FiEye size={18} />
+                      </button>
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      <button
+                        onClick={() => procesarTramite(tramite.id)}
+                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                        disabled={loadingButtons[tramite.id]}
+                      >
+                        {loadingButtons[tramite.id] ? "Procesando..." : "Procesar"}
+                      </button>
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      <button
+                        onClick={() => devolverTramite(tramite.id)}
+                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                        disabled={loadingButtons[tramite.id]}
+                      >
+                        {loadingButtons[tramite.id] ? "Procesando..." : "Devolver"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-gray-200 font-bold">
+                  <td className="border border-gray-300 px-4 py-2" colSpan={4}>
+                    Total Monto por Procesado:
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2 text-blue-600">
+                    {tramitesRevision.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2"></td>
+                  <td className="border border-gray-300 px-4 py-2"></td>
+                  <td className="border border-gray-300 px-4 py-2"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        );
+      case "DEVUELTOS":
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Lista de Trámites Devueltos</h2>
+            <table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200 mb-8">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-100">
+                <tr>
+                  <th className="border border-gray-300 px-4 py-2">Código</th>
+                  <th className="border border-gray-300 px-4 py-2">Fecha</th>
+                  <th className="border border-gray-300 px-4 py-2">Transferencia</th>
+                  <th className="border border-gray-300 px-4 py-2">Estado</th>
+                  <th className="border border-gray-300 px-4 py-2">Monto</th>
+                  <th className="border border-gray-300 px-4 py-2">Ver Detalle</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tramitesDevueltos.map((tramite) => (
+                  <tr key={tramite.id} className="bg-white hover:bg-gray-50">
+                    <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
+                    <td className="border border-gray-300 px-4 py-2">{new Date(tramite.createdAt).toLocaleDateString('es-VE')}</td>
+                    <td className="border border-gray-300 px-4 py-2">{tramite.numeroTransferencia}</td>
+                    <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
+                    <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      <button
+                        onClick={() => setSelectedTramite(tramite)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <FiEye size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-gray-200 font-bold">
+                  <td className="border border-gray-300 px-4 py-2" colSpan={4}>
+                    Total Monto Devuelto:
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2 text-blue-600">
+                    {tramitesDevueltos.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        );
+      case "PROCESADOS":
+        return (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Lista de Trámites Procesados</h2>
+            <table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200 mb-8">
+              <thead className="text-xs text-gray-700 uppercase bg-gray-100">
+                <tr>
+                  <th className="border border-gray-300 px-4 py-2">Código</th>
+                  <th className="border border-gray-300 px-4 py-2">Fecha</th>
+                  <th className="border border-gray-300 px-4 py-2">Estado</th>
+                  <th className="border border-gray-300 px-4 py-2">Monto</th>
+                  <th className="border border-gray-300 px-4 py-2">Ver Detalle</th>
+                </tr>
+              </thead>
+              <tbody>
+                {tramitesOtros.map((tramite) => (
+                  <tr key={tramite.id} className="bg-white hover:bg-gray-50">
+                    <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
+                    <td className="border border-gray-300 px-4 py-2">{new Date(tramite.createdAt).toLocaleDateString('es-VE')}</td>
+                    <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
+                    <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
+                    <td className="border border-gray-300 px-4 py-2 text-center">
+                      <button
+                        onClick={() => setSelectedTramite(tramite)}
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <FiEye size={18} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="bg-gray-200 font-bold">
+                  <td className="border border-gray-300 px-4 py-2" colSpan={3}>
+                    Total Monto Procesado:
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2 text-blue-600">
+                    {tramitesOtros.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
+                  </td>
+                  <td className="border border-gray-300 px-4 py-2"></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        );
+      default:
+        return null;
     }
   };
 
@@ -133,167 +310,24 @@ export default function Fundesurg() {
           Filtrar
         </button>
       </div>
-      <h2 className="text-2xl font-bold mb-6">Lista de Trámites Pendientes</h2>
-      {/* Resto del código de las tablas y modal */}
-{/* Tabla de Trámites Pendientes */}
-      <table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200 mb-8">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-100">
-          <tr>
-            <th className="border border-gray-300 px-4 py-2">Código</th>
-            <th className="border border-gray-300 px-4 py-2">Fecha</th>
-            <th className="border border-gray-300 px-4 py-2">Transferencia</th>
-            <th className="border border-gray-300 px-4 py-2">Estado</th>
-            <th className="border border-gray-300 px-4 py-2">Monto</th>
-            <th className="border border-gray-300 px-4 py-2">Ver Detalle</th>
-            <th className="border border-gray-300 px-4 py-2">Acciones</th>
-            <th className="border border-gray-300 px-4 py-2">Devolucion</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tramitesRevision.map((tramite) => (
-            <tr key={tramite.id} className="bg-white hover:bg-gray-50">
-              <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
-              <td className="border border-gray-300 px-4 py-2">{new Date(tramite.createdAt).toLocaleDateString('es-VE')}</td>
-              {/* <td className="border border-gray-300 px-4 py-2">{tramite.createdAt}</td> */}
-              <td className="border border-gray-300 px-4 py-2">{tramite.numeroTransferencia}</td>
-              <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
-              <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
-              <td className="border border-gray-300 px-4 py-2 text-center">
-                <button
-                  onClick={() => setSelectedTramite(tramite)}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <FiEye size={18} />
-                </button>
-              </td>
-              <td className="border border-gray-300 px-4 py-2">
-                <button
-                  onClick={() => procesarTramite(tramite.id)}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                  disabled={loadingButtons[tramite.id]}
-                >
-                  {loadingButtons[tramite.id] ? "Procesando..." : "Procesar"}
-                </button>
-              </td>
-              {/* DEVOLVER */}
-              <td className="border border-gray-300 px-4 py-2"> 
-                <button
-                  onClick={() => devolverTramite(tramite.id)}
-                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                  disabled={loadingButtons[tramite.id]}
-                >
-                  {loadingButtons[tramite.id] ? "Procesando..." : "Devolver"}
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-        <tr className="bg-gray-200 font-bold">
-          <td className="border border-gray-300 px-4 py-2" colSpan={4}>
-            Total Monto por Procesado:
-          </td>
-          <td className="border border-gray-300 px-4 py-2 text-blue-600">
-            {tramitesRevision.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
-          </td>
-          <td className="border border-gray-300 px-4 py-2"></td>
-          <td className="border border-gray-300 px-4 py-2"></td>
-          <td className="border border-gray-300 px-4 py-2"></td>
-        </tr>
-      </tfoot>
-      </table>
+        {/* SELECTOR DE TABLA */}
+        <div className="flex items-center gap-3 mb-6">
+        <label htmlFor="status-select" className="text-sm font-medium text-gray-700">
+          SELECCIONA UN ESTADO:
+        </label>
+        <select
+          id="status-select"
+          value={selectedOption}
+          onChange={handleChangeStatusTabla}
+          className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer"
+        >
+          <option value="PENDIENTES">PENDIENTES</option>
+          <option value="DEVUELTOS">DEVUELTOS</option>
+          <option value="PROCESADOS">PROCESADOS</option>
+        </select>
+      </div>
 
-      {/* Lista de Trámites Procesados */}
-      <h2 className="text-2xl font-bold mb-6">Lista de Trámites Procesados</h2>
-      <table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200">
-        <thead className="text-xs text-gray-700 uppercase bg-gray-100">
-          <tr>
-            <th className="border border-gray-300 px-4 py-2">Código</th>
-            <th className="border border-gray-300 px-4 py-2">Fecha</th>
-            <th className="border border-gray-300 px-4 py-2">Estado</th>
-            <th className="border border-gray-300 px-4 py-2">Monto</th>
-            <th className="border border-gray-300 px-4 py-2">Ver Detalle</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tramitesOtros.map((tramite) => (
-            <tr key={tramite.id} className="bg-white hover:bg-gray-50">
-              <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
-              <td className="border border-gray-300 px-4 py-2">{new Date(tramite.createdAt).toLocaleDateString('es-VE')}</td>
-              <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
-              <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
-              <td className="border border-gray-300 px-4 py-2 text-center">
-                <button
-                  onClick={() => setSelectedTramite(tramite)}
-                  className="text-blue-500 hover:text-blue-700"
-                >
-                  <FiEye size={18} />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-                {/* Pie de tabla con total de montos */}
-  <tfoot>
-    <tr className="bg-gray-200 font-bold">
-      <td className="border border-gray-300 px-4 py-2" colSpan={3}>
-        Total Monto Procesado:
-      </td>
-      <td className="border border-gray-300 px-4 py-2 text-blue-600">
-        {tramitesOtros.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
-      </td>
-      <td className="border border-gray-300 px-4 py-2 text-blue-600"></td>
-    </tr>
-  </tfoot>
-      </table>
-        
-      {/* LISTA DE TRAMITES DEVUELTOS */}
-      <h2 className="text-2xl font-bold my-6">Lista de Trámites Devueltos</h2>
-
-<table className="w-full text-sm text-left text-gray-500 border-collapse border border-gray-200 mb-8">
-  <thead className="text-xs text-gray-700 uppercase bg-gray-100">
-    <tr>
-      <th className="border border-gray-300 px-4 py-2">Código</th>
-      <th className="border border-gray-300 px-4 py-2">Fecha</th>
-      <th className="border border-gray-300 px-4 py-2">Transferencia</th>
-      <th className="border border-gray-300 px-4 py-2">Estado</th>
-      <th className="border border-gray-300 px-4 py-2">Monto</th>
-      <th className="border border-gray-300 px-4 py-2">Ver Detalle</th>
-      {/* <th className="border border-gray-300 px-4 py-2">Acciones</th>
-      <th className="border border-gray-300 px-4 py-2">Devolucion</th> */}
-    </tr>
-  </thead>
-  <tbody>
-    {tramitesDevueltos.map((tramite) => (
-      <tr key={tramite.id} className="bg-white hover:bg-gray-50">
-        <td className="border border-gray-300 px-4 py-2">{tramite.codigo}</td>
-        <td className="border border-gray-300 px-4 py-2">{new Date(tramite.createdAt).toLocaleDateString('es-VE')}</td>
-        <td className="border border-gray-300 px-4 py-2">{tramite.numeroTransferencia}</td>
-        <td className="border border-gray-300 px-4 py-2">{tramite.status}</td>
-        <td className="border border-gray-300 px-4 py-2">{tramite.monto.toFixed(2)} BS</td>
-        <td className="border border-gray-300 px-4 py-2 text-center">
-          <button
-            onClick={() => setSelectedTramite(tramite)}
-            className="text-blue-500 hover:text-blue-700"
-          >
-            <FiEye size={18} />
-          </button>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-  <tfoot>
-  <tr className="bg-gray-200 font-bold">
-    <td className="border border-gray-300 px-4 py-2" colSpan={4}>
-      Total Monto por Procesado:
-    </td>
-    <td className="border border-gray-300 px-4 py-2 text-blue-600">
-      {tramitesDevueltos.reduce((acc, tramite) => acc + tramite.monto, 0).toFixed(2)} BS
-    </td>
-    <td className="border border-gray-300 px-4 py-2"></td>
-  </tr>
-</tfoot>
-</table>
+      {renderTable()}
 
      {/* MODAL DE DETALLE */}
 {selectedTramite && (
